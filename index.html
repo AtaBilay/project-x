@@ -20,7 +20,7 @@
       <div class="section-card"><div class="section-header"><h3>📦 ТОП поставщики недели</h3><span class="arrow">›</span></div><div id="supplier-list"></div></div>
     </div>
 
-    <!-- ИЗБРАННОЕ -->
+    <!-- ИЗБРАННОЕ (С АНИМАЦИЕЙ) -->
     <div id="screen-favorites" class="screen">
       <div class="favorites-search-container">
         <div class="search-bar-favorites" id="fav-search-bar">
@@ -36,7 +36,7 @@
       <div class="empty-state"><p>В избранном <b>пока</b> пусто</p></div>
     </div>
 
-    <!-- ПРОФИЛЬ -->
+    <!-- ПРОФИЛЬ (исправлена верстка) -->
     <div id="screen-profile" class="screen">
       <div class="profile-header"><div class="small-title">Личный кабинет</div><div class="big-title">Профиль</div></div>
       <div class="profile-card">
@@ -56,6 +56,7 @@
         <div class="divider"></div>
         <div class="grouped-item" id="open-faq-btn"><div class="icon-circle">❓</div><div><h4>FAQ</h4><p>Ответы на частые вопросы</p></div><span class="arrow">›</span></div>
       </div>
+      <!-- КНОПКА АДМИНКИ -->
       <div class="grouped-card" id="admin-panel-btn" style="display:none; cursor:pointer; margin-top: 15px;">
         <div class="grouped-item"><div class="icon-circle" style="background:#ffe0e0; color:red;">⚙️</div><div><h4>Админ-панель</h4><p>Добавление товаров и категорий</p></div><span class="arrow">›</span></div>
       </div>
@@ -102,10 +103,10 @@
         <textarea id="product-desc" placeholder="Описание" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;"></textarea>
         
         <label style="font-weight:bold; margin-bottom:5px; display:block;">Фото товара (можно выбрать несколько)</label>
-        <div class="upload-area">
+        <label for="product-images" class="upload-area">
           <input type="file" id="product-images" accept="image/*" multiple>
           <span>📸 Нажми, чтобы выбрать фото</span>
-        </div>
+        </label>
         
         <button class="admin-big-btn" id="save-product-btn" style="background: #007aff;">💾 Сохранить товар</button>
       </div>
@@ -117,10 +118,10 @@
       <div style="padding: 15px;">
         <input type="text" id="supplier-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
         <input type="text" id="supplier-desc" placeholder="Описание (например, ТЦ Садовод)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
-        <div class="upload-area">
+        <label for="supplier-logo" class="upload-area">
           <input type="file" id="supplier-logo" accept="image/*">
           <span>📸 Загрузить логотип</span>
-        </div>
+        </label>
         <button class="admin-big-btn" id="save-supplier-btn" style="background: #007aff;">💾 Сохранить поставщика</button>
       </div>
     </div>
@@ -130,10 +131,10 @@
       <div class="modal-content" style="padding: 20px; border-radius: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: white;">
         <h3 id="modal-title">Создать</h3>
         <input type="text" id="modal-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
-        <div class="upload-area">
+        <label for="modal-image" class="upload-area">
           <input type="file" id="modal-image" accept="image/*">
           <span>📸 Загрузить иконку</span>
-        </div>
+        </label>
         <div style="display: flex; gap: 10px;">
           <button class="admin-big-btn" id="modal-save-btn" style="flex: 1;">Создать</button>
           <button class="admin-big-btn" id="modal-cancel-btn" style="flex: 1; background: #ccc;">Отмена</button>
@@ -149,6 +150,19 @@
     <div id="nested-content"></div>
   </div>
 
+  <!-- СОРТИРОВКА -->
+  <div id="sort-modal" class="sort-modal hidden">
+    <div class="sort-modal-backdrop" id="sort-modal-backdrop"></div>
+    <div class="sort-modal-content">
+      <div class="drag-handle"></div>
+      <h3>Какие товары показать сначала</h3>
+      <div class="sort-option" data-value="cheap"><span>Дешевле</span> <span class="radio-btn"></span></div>
+      <div class="sort-option" data-value="expensive"><span>Дороже</span> <span class="radio-btn"></span></div>
+      <div class="sort-option active" data-value="new"><span>Новинки</span> <span class="radio-btn selected"></span></div>
+    </div>
+  </div>
+
+  <!-- БОТТОМ-БАР -->
   <nav class="tab-bar">
     <div class="tab-item active" data-tab="home"><span class="icon">▦</span></div>
     <div class="tab-item" data-tab="favorites"><span class="icon">♥</span><span class="badge-nav">0</span></div>
