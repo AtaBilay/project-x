@@ -109,7 +109,7 @@
       </div>
 
       <div class="menu-list">
-        <div class="menu-item">
+        <div class="menu-item" id="open-settings-btn" style="cursor:pointer;">
           <div class="icon-circle">⚙️</div>
           <div>
             <h4>Настройки</h4>
@@ -125,6 +125,51 @@
           </div>
           <span class="arrow">›</span>
         </div>
+      </div>
+    </div>
+
+    <!-- НАСТРОЙКИ (Новый экран) -->
+    <div id="screen-settings" class="screen">
+      <div class="settings-header">
+        <button class="back-btn" id="settings-back-btn">←</button>
+        <h2>Настройки</h2>
+      </div>
+
+      <div class="main-settings-card">
+        <div class="settings-top-row">
+          <div>
+            <div class="settings-subtitle">Подписка BAZA</div>
+            <div class="settings-status">Доступ ограничен</div>
+          </div>
+          <div class="settings-badge">Ограничен</div>
+        </div>
+        
+        <div class="settings-desc">Доступ к каталогу ограничен. Состояние будущих автоматических списаний показано отдельно ниже.</div>
+
+        <div class="settings-row">
+          <span class="row-icon">📅</span>
+          <div>Оплаченный период до</div>
+          <div class="row-value">Нет активного периода</div>
+        </div>
+        <div class="settings-row">
+          <span class="row-icon">🔄</span>
+          <div>Автопродление</div>
+          <div class="row-value">Выключено</div>
+        </div>
+        <div class="settings-row">
+          <span class="row-icon">🔄</span>
+          <div>Следующее списание</div>
+          <div class="row-value">Не запланировано</div>
+        </div>
+
+        <div class="settings-grey-box">
+          Автопродление выключено. Текущий доступ не изменится.
+        </div>
+      </div>
+
+      <div class="settings-info-box">
+        <span class="shield">🛡️</span>
+        <div>Отмена отключает будущие автоматические списания. Текущий статус доступа при этом не изменяется.</div>
       </div>
     </div>
 
