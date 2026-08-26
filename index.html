@@ -36,7 +36,7 @@
       <div class="empty-state"><p>В избранном <b>пока</b> пусто</p></div>
     </div>
 
-    <!-- ПРОФИЛЬ (исправлена верстка) -->
+    <!-- ПРОФИЛЬ -->
     <div id="screen-profile" class="screen">
       <div class="profile-header"><div class="small-title">Личный кабинет</div><div class="big-title">Профиль</div></div>
       <div class="profile-card">
@@ -51,11 +51,22 @@
         <div class="currency-info"><h4>Валюта товаров</h4><p>Цены каталога</p></div>
         <div class="rate">1 ₽ = <span id="kzt-rate">5,94</span> ₸</div>
       </div>
+      
+      <!-- ГРУППИРОВАННАЯ ПЛАШКА (Вернул id для Настроек) -->
       <div class="grouped-card">
-        <div class="grouped-item"><div class="icon-circle">⚙️</div><div><h4>Настройки</h4><p>Подписка и управление доступом</p></div><span class="arrow">›</span></div>
+        <div class="grouped-item" id="open-settings-btn" style="cursor:pointer;">
+          <div class="icon-circle">⚙️</div>
+          <div><h4>Настройки</h4><p>Подписка и управление доступом</p></div>
+          <span class="arrow">›</span>
+        </div>
         <div class="divider"></div>
-        <div class="grouped-item" id="open-faq-btn"><div class="icon-circle">❓</div><div><h4>FAQ</h4><p>Ответы на частые вопросы</p></div><span class="arrow">›</span></div>
+        <div class="grouped-item" id="open-faq-btn" style="cursor:pointer;">
+          <div class="icon-circle">❓</div>
+          <div><h4>FAQ</h4><p>Ответы на частые вопросы</p></div>
+          <span class="arrow">›</span>
+        </div>
       </div>
+      
       <!-- КНОПКА АДМИНКИ -->
       <div class="grouped-card" id="admin-panel-btn" style="display:none; cursor:pointer; margin-top: 15px;">
         <div class="grouped-item"><div class="icon-circle" style="background:#ffe0e0; color:red;">⚙️</div><div><h4>Админ-панель</h4><p>Добавление товаров и категорий</p></div><span class="arrow">›</span></div>
