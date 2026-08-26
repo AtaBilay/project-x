@@ -22,8 +22,17 @@
 
     <!-- ИЗБРАННОЕ -->
     <div id="screen-favorites" class="screen">
-      <div class="inner-header"><input type="text" placeholder="Найти в избранном"><button class="sort-btn">⇅</button></div>
-      <div class="tabs"><div class="tab-btn active">Товары <span class="count">0</span></div><div class="tab-btn">Поставщики <span class="count">0</span></div></div>
+      <div class="favorites-search-container">
+        <div class="search-bar-favorites" id="fav-search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Найти в избранном">
+          <button class="sort-btn" id="favorites-sort-btn">⇅</button>
+        </div>
+      </div>
+      <div class="favorites-tabs">
+        <div class="favorites-tab active" data-tab="products"><span class="tab-text">Товары</span> <span class="tab-badge">0</span></div>
+        <div class="favorites-tab" data-tab="suppliers"><span class="tab-text">Поставщики</span> <span class="tab-badge">0</span></div>
+      </div>
       <div class="empty-state"><p>В избранном <b>пока</b> пусто</p></div>
     </div>
 
@@ -92,9 +101,11 @@
         <input type="text" id="product-discount" placeholder="Скидка (например, -33%)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
         <textarea id="product-desc" placeholder="Описание" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;"></textarea>
         
-        <!-- ИЗМЕНЕНО: Множественная загрузка -->
         <label style="font-weight:bold; margin-bottom:5px; display:block;">Фото товара (можно выбрать несколько)</label>
-        <input type="file" id="product-images" accept="image/*" multiple style="margin-bottom: 20px;">
+        <div class="upload-area">
+          <input type="file" id="product-images" accept="image/*" multiple>
+          <span>📸 Нажми, чтобы выбрать фото</span>
+        </div>
         
         <button class="admin-big-btn" id="save-product-btn" style="background: #007aff;">💾 Сохранить товар</button>
       </div>
@@ -106,7 +117,10 @@
       <div style="padding: 15px;">
         <input type="text" id="supplier-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
         <input type="text" id="supplier-desc" placeholder="Описание (например, ТЦ Садовод)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
-        <input type="file" id="supplier-logo" accept="image/*" style="margin-bottom: 20px;">
+        <div class="upload-area">
+          <input type="file" id="supplier-logo" accept="image/*">
+          <span>📸 Загрузить логотип</span>
+        </div>
         <button class="admin-big-btn" id="save-supplier-btn" style="background: #007aff;">💾 Сохранить поставщика</button>
       </div>
     </div>
@@ -116,7 +130,10 @@
       <div class="modal-content" style="padding: 20px; border-radius: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: white;">
         <h3 id="modal-title">Создать</h3>
         <input type="text" id="modal-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
-        <input type="file" id="modal-image" accept="image/*" style="margin-bottom:20px;">
+        <div class="upload-area">
+          <input type="file" id="modal-image" accept="image/*">
+          <span>📸 Загрузить иконку</span>
+        </div>
         <div style="display: flex; gap: 10px;">
           <button class="admin-big-btn" id="modal-save-btn" style="flex: 1;">Создать</button>
           <button class="admin-big-btn" id="modal-cancel-btn" style="flex: 1; background: #ccc;">Отмена</button>
