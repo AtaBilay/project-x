@@ -62,6 +62,7 @@ body {
   padding: 15px;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  position: relative;
 }
 .banner .badge {
   background: #2c2c2e;
