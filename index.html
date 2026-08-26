@@ -9,231 +9,134 @@
 </head>
 <body>
   <div id="app">
-
     <!-- ГЛАВНАЯ -->
     <div id="screen-home" class="screen active">
-      <header class="gradient-header">
-        <div class="logo">BAZA</div>
-        <div class="header-icons">
-          <span class="heart-badge">0</span> ❤️
-        </div>
-      </header>
-
-      <div class="search-bar">
-        <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Поиск">
-      </div>
-
-      <div class="banner">
-        <div class="badge">ВАЖНО!</div>
-        <h3>BAZA — это платформа доступа к поставщикам.</h3>
-        <p>Все заказы, оплата и доставка происходят напрямую между вами и поставщиком. Поставщики никогда не пишут первыми.</p>
-      </div>
-
+      <header class="gradient-header"><div class="logo">BAZA</div><div class="header-icons"><span class="heart-badge">0</span> ❤️</div></header>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" placeholder="Поиск"></div>
+      <div class="banner"><div class="badge">ВАЖНО!</div><h3>BAZA — это платформа доступа к поставщикам.</h3><p>Все заказы, оплата и доставка происходят напрямую между вами и поставщиком.</p></div>
       <div class="category-grid" id="category-grid"></div>
-
-      <div class="section-card">
-        <div class="section-header">
-          <h3>🔥 Горячие предложения</h3>
-          <span class="arrow">›</span>
-        </div>
-        <div class="horizontal-scroll" id="hot-scroll"></div>
-      </div>
-
-      <div class="section-card">
-        <div class="section-header">
-          <h3>⭐ ТОП товары недели</h3>
-          <span class="arrow">›</span>
-        </div>
-        <div class="horizontal-scroll" id="top-scroll"></div>
-      </div>
-
-      <div class="section-card">
-        <div class="section-header">
-          <h3>📦 ТОП поставщики недели</h3>
-          <span class="arrow">›</span>
-        </div>
-        <div id="supplier-list"></div>
-      </div>
-
-      <div class="section-card">
-        <div class="section-header">
-          <h3>❓ FAQ Ответы на вопросы</h3>
-        </div>
-        <div id="faq-accordion"></div>
-      </div>
+      <div class="section-card"><div class="section-header"><h3>🔥 Горячие предложения</h3><span class="arrow">›</span></div><div class="horizontal-scroll" id="hot-scroll"></div></div>
+      <div class="section-card"><div class="section-header"><h3>⭐ ТОП товары недели</h3><span class="arrow">›</span></div><div class="horizontal-scroll" id="top-scroll"></div></div>
+      <div class="section-card"><div class="section-header"><h3>📦 ТОП поставщики недели</h3><span class="arrow">›</span></div><div id="supplier-list"></div></div>
     </div>
 
-    <!-- ИЗБРАННОЕ (ОБНОВЛЕНО) -->
+    <!-- ИЗБРАННОЕ -->
     <div id="screen-favorites" class="screen">
-      <div class="favorites-search-container">
-        <div class="search-bar-favorites" id="fav-search-bar">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Найти в избранном">
-          <button class="sort-btn" id="favorites-sort-btn">⇅</button>
-        </div>
-      </div>
-
-      <div class="favorites-tabs">
-        <div class="favorites-tab active" data-tab="products">
-          <span class="tab-text">Товары</span> <span class="tab-badge">0</span>
-        </div>
-        <div class="favorites-tab" data-tab="suppliers">
-          <span class="tab-text">Поставщики</span> <span class="tab-badge">0</span>
-        </div>
-      </div>
-
-      <div class="empty-state">
-        <p>В избранном <b>пока</b> пусто</p>
-      </div>
+      <div class="inner-header"><input type="text" placeholder="Найти в избранном"><button class="sort-btn">⇅</button></div>
+      <div class="tabs"><div class="tab-btn active">Товары <span class="count">0</span></div><div class="tab-btn">Поставщики <span class="count">0</span></div></div>
+      <div class="empty-state"><p>В избранном <b>пока</b> пусто</p></div>
     </div>
 
     <!-- ПРОФИЛЬ -->
     <div id="screen-profile" class="screen">
-      <div class="profile-header">
-        <div class="small-title">Личный кабинет</div>
-        <div class="big-title">Профиль</div>
-      </div>
-
+      <div class="profile-header"><div class="small-title">Личный кабинет</div><div class="big-title">Профиль</div></div>
       <div class="profile-card">
-        <img id="user-avatar" src="https://via.placeholder.com/60" class="avatar" alt="Аватар">
+        <img id="user-avatar" src="https://via.placeholder.com/60" class="avatar">
         <div class="profile-info">
           <h3 id="user-name">Загрузка...</h3>
-          <div class="profile-tags">
-            <span class="tag telegram">📘 Telegram</span>
-            <span class="tag username" id="user-username">@loading</span>
-          </div>
+          <div class="profile-tags"><span class="tag telegram">📘 Telegram</span><span class="tag username" id="user-username">@loading</span></div>
         </div>
       </div>
-
       <div class="settings-card currency-card">
         <div class="icon-circle">🔄</div>
-        <div class="currency-info">
-          <h4>Валюта товаров</h4>
-          <p>Цены каталога</p>
-        </div>
+        <div class="currency-info"><h4>Валюта товаров</h4><p>Цены каталога</p></div>
         <div class="rate">1 ₽ = <span id="kzt-rate">5,94</span> ₸</div>
       </div>
-
       <div class="grouped-card">
-        <div class="grouped-item" id="open-settings-btn" style="cursor:pointer;">
-          <div class="icon-circle">⚙️</div>
-          <div>
-            <h4>Настройки</h4>
-            <p>Подписка и управление доступом</p>
-          </div>
-          <span class="arrow">›</span>
-        </div>
+        <div class="grouped-item"><div class="icon-circle">⚙️</div><div><h4>Настройки</h4><p>Подписка и управление доступом</p></div><span class="arrow">›</span></div>
         <div class="divider"></div>
-        <div class="grouped-item" id="open-faq-btn" style="cursor:pointer;">
-          <div class="icon-circle">❓</div>
-          <div>
-            <h4>FAQ</h4>
-            <p>Ответы на частые вопросы</p>
-          </div>
-          <span class="arrow">›</span>
-        </div>
+        <div class="grouped-item" id="open-faq-btn"><div class="icon-circle">❓</div><div><h4>FAQ</h4><p>Ответы на частые вопросы</p></div><span class="arrow">›</span></div>
+      </div>
+      <div class="grouped-card" id="admin-panel-btn" style="display:none; cursor:pointer; margin-top: 15px;">
+        <div class="grouped-item"><div class="icon-circle" style="background:#ffe0e0; color:red;">⚙️</div><div><h4>Админ-панель</h4><p>Добавление товаров и категорий</p></div><span class="arrow">›</span></div>
       </div>
     </div>
 
     <!-- НАСТРОЙКИ -->
     <div id="screen-settings" class="screen">
-      <div class="settings-header">
-        <button class="back-btn" id="settings-back-btn">←</button>
-        <h2>Настройки</h2>
-      </div>
-
+      <div class="settings-header"><button class="back-btn" id="settings-back-btn">←</button><h2>Настройки</h2></div>
       <div class="main-settings-card">
-        <div class="settings-top-row">
-          <div>
-            <div class="settings-subtitle">Подписка BAZA</div>
-            <div class="settings-status">Доступ ограничен</div>
-          </div>
-          <div class="settings-badge">Ограничен</div>
-        </div>
-        
-        <div class="settings-desc">Доступ к каталогу ограничен. Состояние будущих автоматических списаний показано отдельно ниже.</div>
-
-        <div class="settings-row">
-          <span class="row-icon">📅</span>
-          <div>Оплаченный период до</div>
-          <div class="row-value">Нет активного периода</div>
-        </div>
-        <div class="settings-row">
-          <span class="row-icon">🔄</span>
-          <div>Автопродление</div>
-          <div class="row-value">Выключено</div>
-        </div>
-        <div class="settings-row">
-          <span class="row-icon">🔄</span>
-          <div>Следующее списание</div>
-          <div class="row-value">Не запланировано</div>
-        </div>
-
-        <div class="settings-grey-box">
-          Автопродление выключено. Текущий доступ не изменится.
-        </div>
-      </div>
-
-      <div class="settings-info-box">
-        <span class="shield">🛡️</span>
-        <div>Отмена отключает будущие автоматические списания. Текущий статус доступа при этом не изменяется.</div>
+        <div class="settings-top-row"><div><div class="settings-subtitle">Подписка BAZA</div><div class="settings-status">Доступ ограничен</div></div><div class="settings-badge">Ограничен</div></div>
+        <div class="settings-desc">Доступ к каталогу ограничен.</div>
+        <div class="settings-grey-box">Автопродление выключено. Текущий доступ не изменится.</div>
       </div>
     </div>
 
     <!-- FAQ -->
     <div id="screen-faq" class="screen">
-      <div class="settings-header">
-        <button class="back-btn" id="faq-back-btn">←</button>
-        <h2>FAQ</h2>
-      </div>
-      <div class="faq-subtitle">Короткие ответы о каталоге, поставщиках и подписке.</div>
+      <div class="settings-header"><button class="back-btn" id="faq-back-btn">←</button><h2>FAQ</h2></div>
       <div id="faq-list"></div>
+    </div>
+
+    <!-- АДМИНКА -->
+    <div id="screen-admin" class="screen">
+      <div class="settings-header"><button class="back-btn" id="admin-back-btn">←</button><h2>Админ-панель</h2></div>
+      <div style="padding: 15px;">
+        <button class="admin-big-btn" id="btn-add-product">➕ Добавить товар</button>
+        <button class="admin-big-btn" id="btn-add-category">➕ Новый раздел</button>
+        <button class="admin-big-btn" id="btn-add-subcategory">➕ Новый тип</button>
+        <button class="admin-big-btn" id="btn-add-supplier">➕ Новый поставщик</button>
+      </div>
+    </div>
+
+    <!-- НОВЫЙ ТОВАР -->
+    <div id="screen-admin-product" class="screen">
+      <div class="settings-header"><button class="back-btn" id="product-back-btn">←</button><h2>Новый товар</h2></div>
+      <div style="padding: 15px;">
+        <select id="product-category" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;"></select>
+        <select id="product-subcategory" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;"></select>
+        <select id="product-supplier" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;"></select>
+        <input type="text" id="product-title" placeholder="Название товара" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <input type="number" id="product-price" placeholder="Цена (₽)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <input type="number" id="product-old-price" placeholder="Старая цена (если скидка)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <input type="text" id="product-discount" placeholder="Скидка (например, -33%)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <textarea id="product-desc" placeholder="Описание" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;"></textarea>
+        
+        <!-- ИЗМЕНЕНО: Множественная загрузка -->
+        <label style="font-weight:bold; margin-bottom:5px; display:block;">Фото товара (можно выбрать несколько)</label>
+        <input type="file" id="product-images" accept="image/*" multiple style="margin-bottom: 20px;">
+        
+        <button class="admin-big-btn" id="save-product-btn" style="background: #007aff;">💾 Сохранить товар</button>
+      </div>
+    </div>
+
+    <!-- НОВЫЙ ПОСТАВЩИК -->
+    <div id="screen-admin-supplier" class="screen">
+      <div class="settings-header"><button class="back-btn" id="supplier-back-btn">←</button><h2>Новый поставщик</h2></div>
+      <div style="padding: 15px;">
+        <input type="text" id="supplier-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <input type="text" id="supplier-desc" placeholder="Описание (например, ТЦ Садовод)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <input type="file" id="supplier-logo" accept="image/*" style="margin-bottom: 20px;">
+        <button class="admin-big-btn" id="save-supplier-btn" style="background: #007aff;">💾 Сохранить поставщика</button>
+      </div>
+    </div>
+
+    <!-- МОДАЛКА КАТЕГОРИЙ -->
+    <div id="create-modal" class="modal hidden" style="z-index: 200;">
+      <div class="modal-content" style="padding: 20px; border-radius: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: white;">
+        <h3 id="modal-title">Создать</h3>
+        <input type="text" id="modal-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
+        <input type="file" id="modal-image" accept="image/*" style="margin-bottom:20px;">
+        <div style="display: flex; gap: 10px;">
+          <button class="admin-big-btn" id="modal-save-btn" style="flex: 1;">Создать</button>
+          <button class="admin-big-btn" id="modal-cancel-btn" style="flex: 1; background: #ccc;">Отмена</button>
+        </div>
+      </div>
     </div>
 
   </div>
 
   <!-- ВЛОЖЕННЫЙ ЭКРАН -->
   <div id="nested-screen" class="hidden">
-    <header class="nested-header">
-      <button id="back-btn">←</button>
-      <h2 id="nested-title">Категория</h2>
-      <button class="sort-btn">⇅</button>
-    </header>
+    <header class="nested-header"><button id="back-btn">←</button><h2 id="nested-title">Категория</h2><button class="sort-btn">⇅</button></header>
     <div id="nested-content"></div>
   </div>
 
-  <!-- БОТТОМ-БАР -->
   <nav class="tab-bar">
-    <div class="tab-item active" data-tab="home">
-      <span class="icon">▦</span>
-    </div>
-    <div class="tab-item" data-tab="favorites">
-      <span class="icon">♥</span>
-      <span class="badge-nav">0</span>
-    </div>
-    <div class="tab-item" data-tab="profile">
-      <span class="icon">👤</span>
-    </div>
+    <div class="tab-item active" data-tab="home"><span class="icon">▦</span></div>
+    <div class="tab-item" data-tab="favorites"><span class="icon">♥</span><span class="badge-nav">0</span></div>
+    <div class="tab-item" data-tab="profile"><span class="icon">👤</span></div>
   </nav>
-
-  <!-- МОДАЛКА СОРТИРОВКИ (ОБНОВЛЕНА) -->
-  <div id="sort-modal" class="sort-modal hidden">
-    <div class="sort-modal-backdrop" id="sort-modal-backdrop"></div>
-    <div class="sort-modal-content">
-      <div class="drag-handle"></div>
-      <h3>Какие товары показать сначала</h3>
-      <div class="sort-option" data-value="cheap">
-        <span>Дешевле</span> <span class="radio-btn"></span>
-      </div>
-      <div class="sort-option" data-value="expensive">
-        <span>Дороже</span> <span class="radio-btn"></span>
-      </div>
-      <div class="sort-option active" data-value="new">
-        <span>Новинки</span> <span class="radio-btn selected"></span>
-      </div>
-    </div>
-  </div>
 
   <script type="module" src="app.js"></script>
 </body>
