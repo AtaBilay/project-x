@@ -9,63 +9,156 @@
 </head>
 <body>
   <div id="app">
-    <!-- Экраны (страницы) -->
-    <div id="tab-home" class="screen active">
-      <header class="header">
+
+    <!-- ГЛАВНАЯ -->
+    <div id="screen-home" class="screen active">
+      <header class="gradient-header">
         <div class="logo">BAZA</div>
-        <div class="icons">
-          <span class="badge" id="home-fav-badge">0</span> ❤️
+        <div class="header-icons">
+          <span class="heart-badge">0</span> ❤️
         </div>
       </header>
-      
+
       <div class="search-bar">
+        <span class="search-icon">🔍</span>
         <input type="text" placeholder="Поиск">
       </div>
 
-      <!-- Важный баннер -->
       <div class="banner">
-        <h3>ВАЖНО!</h3>
-        <p>BAZA — это платформа доступа к поставщикам.</p>
+        <div class="badge">ВАЖНО!</div>
+        <h3>BAZA — это платформа доступа к поставщикам.</h3>
+        <p>Все заказы, оплата и доставка происходят напрямую между вами и поставщиком. Поставщики никогда не пишут первыми.</p>
       </div>
 
-      <!-- Сетка категорий -->
-      <div class="grid-categories" id="home-categories">
-        <!-- JS отрисует сюда -->
+      <div class="category-grid" id="category-grid"></div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <h3>🔥 Горячие предложения</h3>
+          <span class="arrow">›</span>
+        </div>
+        <div class="horizontal-scroll" id="hot-scroll"></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <h3>⭐ ТОП товары недели</h3>
+          <span class="arrow">›</span>
+        </div>
+        <div class="horizontal-scroll" id="top-scroll"></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <h3>📦 ТОП поставщики недели</h3>
+          <span class="arrow">›</span>
+        </div>
+        <div id="supplier-list"></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <h3>❓ FAQ Ответы на вопросы</h3>
+        </div>
+        <div id="faq-accordion"></div>
       </div>
     </div>
 
-    <div id="tab-favorites" class="screen">
-      <header class="header"><h2>Избранное</h2></header>
-      <div class="empty-state">В избранном пока пусто</div>
+    <!-- ИЗБРАННОЕ -->
+    <div id="screen-favorites" class="screen">
+      <div class="inner-header">
+        <input type="text" placeholder="Найти в избранном">
+        <button class="sort-btn">⇅</button>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab-btn active">Товары <span class="count">0</span></div>
+        <div class="tab-btn">Поставщики <span class="count">0</span></div>
+      </div>
+
+      <div class="empty-state">
+        <p>В избранном <b>пока</b> пусто</p>
+      </div>
     </div>
 
-    <div id="tab-profile" class="screen">
-      <header class="header"><h2>Профиль</h2></header>
-      <!-- Профиль сделаем позже -->
+    <!-- ПРОФИЛЬ -->
+    <div id="screen-profile" class="screen">
+      <div class="header-title">Личный кабинет</div>
+
+      <div class="profile-card">
+        <img src="https://via.placeholder.com/60" class="avatar">
+        <div class="profile-info">
+          <h3>Билайн Зябликов</h3>
+          <div class="profile-tags">
+            <span class="tag telegram">📘 Telegram</span>
+            <span class="tag username">@batat8986</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h4>💰 Валюта товаров</h4>
+        <div class="toggle">
+          <span class="active">₽ RUB</span>
+          <span>₸ KZT</span>
+        </div>
+        <p class="rate">1 ₽ = 5,94 ₸</p>
+      </div>
+
+      <div class="menu-list">
+        <div class="menu-item">
+          <span class="icon">⚙️</span>
+          <div>
+            <h4>Настройки</h4>
+            <p>Подписка и управление доступом</p>
+          </div>
+          <span class="arrow">›</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">❓</span>
+          <div>
+            <h4>FAQ</h4>
+            <p>Ответы на частые вопросы</p>
+          </div>
+          <span class="arrow">›</span>
+        </div>
+      </div>
     </div>
+
   </div>
 
-  <!-- Нижняя навигация (3 вкладки) -->
+  <!-- ВЛОЖЕННЫЙ ЭКРАН -->
+  <div id="nested-screen" class="hidden">
+    <header class="nested-header">
+      <button id="back-btn">←</button>
+      <h2 id="nested-title">Категория</h2>
+      <button class="sort-btn">⇅</button>
+    </header>
+    <div id="nested-content"></div>
+  </div>
+
+  <!-- БОТТОМ-БАР -->
   <nav class="tab-bar">
-    <div class="tab-item" data-tab="home">
-      <svg>...</svg> <span>Главная</span>
+    <div class="tab-item active" data-tab="home">
+      <span class="icon">▦</span>
     </div>
     <div class="tab-item" data-tab="favorites">
-      <svg>...</svg> <span>Избранное</span> <span class="nav-badge">0</span>
+      <span class="icon">♥</span>
+      <span class="badge-nav">0</span>
     </div>
     <div class="tab-item" data-tab="profile">
-      <svg>...</svg> <span>Профиль</span>
+      <span class="icon">👤</span>
     </div>
   </nav>
 
-  <!-- Экран подкатегорий (появляется поверх) -->
-  <div id="nested-screen" class="hidden">
-    <header>
-      <button id="back-btn" onclick="goBack()">←</button>
-      <h2 id="nested-title">Категория</h2>
-      <button id="sort-btn">⇅</button>
-    </header>
-    <div id="nested-content"></div>
+  <!-- МОДАЛКА СОРТИРОВКИ -->
+  <div id="sort-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Какие товары показать сначала</h3>
+      <div class="sort-option">Дешевле <span></span></div>
+      <div class="sort-option">Дороже <span></span></div>
+      <div class="sort-option active">Новинки <span>●</span></div>
+    </div>
   </div>
 
   <script type="module" src="app.js"></script>
