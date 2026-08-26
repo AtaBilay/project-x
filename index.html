@@ -108,8 +108,9 @@
         <div class="rate">1 ₽ = <span id="kzt-rate">5,94</span> ₸</div>
       </div>
 
-      <div class="menu-list">
-        <div class="menu-item" id="open-settings-btn" style="cursor:pointer;">
+      <!-- Объединенная плашка -->
+      <div class="grouped-card">
+        <div class="grouped-item" id="open-settings-btn" style="cursor:pointer;">
           <div class="icon-circle">⚙️</div>
           <div>
             <h4>Настройки</h4>
@@ -117,7 +118,8 @@
           </div>
           <span class="arrow">›</span>
         </div>
-        <div class="menu-item">
+        <div class="divider"></div>
+        <div class="grouped-item" id="open-faq-btn" style="cursor:pointer;">
           <div class="icon-circle">❓</div>
           <div>
             <h4>FAQ</h4>
@@ -128,7 +130,7 @@
       </div>
     </div>
 
-    <!-- НАСТРОЙКИ (Новый экран) -->
+    <!-- НАСТРОЙКИ -->
     <div id="screen-settings" class="screen">
       <div class="settings-header">
         <button class="back-btn" id="settings-back-btn">←</button>
@@ -173,6 +175,16 @@
       </div>
     </div>
 
+    <!-- FAQ -->
+    <div id="screen-faq" class="screen">
+      <div class="settings-header">
+        <button class="back-btn" id="faq-back-btn">←</button>
+        <h2>FAQ</h2>
+      </div>
+      <div class="faq-subtitle">Короткие ответы о каталоге, поставщиках и подписке.</div>
+      <div id="faq-list"></div>
+    </div>
+
   </div>
 
   <!-- ВЛОЖЕННЫЙ ЭКРАН -->
@@ -198,16 +210,6 @@
       <span class="icon">👤</span>
     </div>
   </nav>
-
-  <!-- МОДАЛКА СОРТИРОВКИ -->
-  <div id="sort-modal" class="modal hidden">
-    <div class="modal-content">
-      <h3>Какие товары показать сначала</h3>
-      <div class="sort-option">Дешевле <span></span></div>
-      <div class="sort-option">Дороже <span></span></div>
-      <div class="sort-option active">Новинки <span>●</span></div>
-    </div>
-  </div>
 
   <script type="module" src="app.js"></script>
 </body>
