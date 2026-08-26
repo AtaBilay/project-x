@@ -63,34 +63,71 @@ tabs.forEach(tab => {
 // ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ ==================
 const openSettingsBtn = document.getElementById('open-settings-btn');
 const settingsBackBtn = document.getElementById('settings-back-btn');
-
 const openFaqBtn = document.getElementById('open-faq-btn');
 const faqBackBtn = document.getElementById('faq-back-btn');
 
-// Открыть настройки
 openSettingsBtn.addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-settings').classList.add('active');
 });
 
-// Вернуться в профиль из настроек
 settingsBackBtn.addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-profile').classList.add('active');
 });
 
-// Открыть FAQ
 openFaqBtn.addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-faq').classList.add('active');
 });
 
-// Вернуться в профиль из FAQ
 faqBackBtn.addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-profile').classList.add('active');
 });
 // ==============================================================
+
+// ================== ИЗБРАННОЕ: ПЕРЕКЛЮЧЕНИЕ ТАБОВ И СОРТИРОВКА ==================
+const favTabs = document.querySelectorAll('.favorites-tab');
+const favSearchBar = document.getElementById('fav-search-bar');
+const favoritesSortBtn = document.getElementById('favorites-sort-btn');
+
+favTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    favTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    if (tab.dataset.tab === 'suppliers') {
+      // Прячем фильтры и расширяем поиск
+      favSearchBar.classList.add('suppliers-mode');
+    } else {
+      // Возвращаем фильтры
+      favSearchBar.classList.remove('suppliers-mode');
+    }
+  });
+});
+
+// Логика модального окна сортировки
+const sortModal = document.getElementById('sort-modal');
+const sortModalBackdrop = document.getElementById('sort-modal-backdrop');
+const sortOptions = document.querySelectorAll('.sort-option');
+
+favoritesSortBtn.addEventListener('click', () => {
+  sortModal.classList.remove('hidden');
+});
+
+sortModalBackdrop.addEventListener('click', () => {
+  sortModal.classList.add('hidden');
+});
+
+sortOptions.forEach(option => {
+  option.addEventListener('click', () => {
+    sortOptions.forEach(opt => opt.classList.remove('active'));
+    option.classList.add('active');
+    sortModal.classList.add('hidden');
+  });
+});
+// ==================================================================================
 
 // Рендер категорий на главной
 const categoryGrid = document.getElementById('category-grid');
@@ -156,7 +193,7 @@ faqData.slice(0, 3).forEach(item => {
   `;
 });
 
-// Рендер FAQ на отдельном экране (с всплывающими окошками)
+// Рендер FAQ на отдельном экране
 const faqList = document.getElementById('faq-list');
 faqData.forEach(item => {
   const div = document.createElement('div');
