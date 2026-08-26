@@ -4,6 +4,29 @@ const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
 
+// ================== ЛОГИКА ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ==================
+const tgUser = tg?.initDataUnsafe?.user;
+
+if (tgUser) {
+  // Собираем полное имя
+  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
+  document.getElementById('user-name').textContent = fullName || 'Пользователь';
+
+  // Достаем юзернейм
+  const tgUsername = tgUser.username;
+  document.getElementById('user-username').textContent = tgUsername ? '@' + tgUsername : 'Без username';
+
+  // Достаем аватарку (если доступна)
+  if (tgUser.photo_url) {
+    document.getElementById('user-avatar').src = tgUser.photo_url;
+  } else {
+    // Если фото скрыто, ставим заглушку с первой буквой имени
+    const firstLetter = fullName ? fullName[0].toUpperCase() : 'U';
+    document.getElementById('user-avatar').src = `https://via.placeholder.com/60/007AFF/FFFFFF?text=${firstLetter}`;
+  }
+}
+// ================================================================
+
 // Переключение вкладок
 const tabs = document.querySelectorAll('.tab-item');
 tabs.forEach(tab => {
