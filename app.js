@@ -8,24 +8,46 @@ tg?.expand();
 const tgUser = tg?.initDataUnsafe?.user;
 
 if (tgUser) {
-  // Собираем полное имя
   const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
   document.getElementById('user-name').textContent = fullName || 'Пользователь';
 
-  // Достаем юзернейм
   const tgUsername = tgUser.username;
   document.getElementById('user-username').textContent = tgUsername ? '@' + tgUsername : 'Без username';
 
-  // Достаем аватарку (если доступна)
   if (tgUser.photo_url) {
     document.getElementById('user-avatar').src = tgUser.photo_url;
   } else {
-    // Если фото скрыто, ставим заглушку с первой буквой имени
     const firstLetter = fullName ? fullName[0].toUpperCase() : 'U';
     document.getElementById('user-avatar').src = `https://via.placeholder.com/60/007AFF/FFFFFF?text=${firstLetter}`;
   }
+} else {
+  document.getElementById('user-name').textContent = 'Откройте в Telegram';
+  document.getElementById('user-username').textContent = '@not_telegram';
+  document.getElementById('user-avatar').src = 'https://via.placeholder.com/60/FF0000/FFFFFF?text=?';
 }
 // ================================================================
+
+// ================== ПОДКЛЮЧЕНИЕ КУРСА ВАЛЮТ (БАНК) ==================
+async function fetchCurrencyRate() {
+  const rateElement = document.getElementById('kzt-rate');
+  try {
+    // Используем открытое API курсов валют (поддерживает CORS)
+    const response = await fetch('https://open.er-api.com/v6/latest/RUB');
+    const data = await response.json();
+    
+    if (data && data.rates && data.rates.KZT) {
+      const rate = data.rates.KZT.toFixed(2);
+      rateElement.textContent = rate;
+    } else {
+      throw new Error('Rate not found');
+    }
+  } catch (e) {
+    console.log('Ошибка получения курса, использую резервный 5,94');
+    rateElement.textContent = '5,94';
+  }
+}
+fetchCurrencyRate();
+// ======================================================================
 
 // Переключение вкладок
 const tabs = document.querySelectorAll('.tab-item');
@@ -120,7 +142,6 @@ function openCategory(cat) {
       </div>
     `).join('');
   } else if (cat.id === 'women') {
-    // Показываем список подкатегорий
     nestedContent.innerHTML = subCategories.map(sub => `
       <div class="list-item" onclick="openSubCategory('${sub.id}')">
         <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">${sub.icon}</div>
@@ -128,7 +149,6 @@ function openCategory(cat) {
       </div>
     `).join('');
   } else if (cat.id === 'promo') {
-    // Рендер сетки акций
     nestedContent.innerHTML = `<div class="product-grid">
       ${promoProducts.map(p => `
         <div class="product-card">
@@ -143,7 +163,6 @@ function openCategory(cat) {
       `).join('')}
     </div>`;
   } else {
-    // Дефолтный рендер товаров
     nestedContent.innerHTML = `<div class="product-grid">
       ${blouses.map(p => `
         <div class="product-card">
@@ -161,7 +180,7 @@ document.getElementById('back-btn').addEventListener('click', () => {
   nestedScreen.classList.add('hidden');
 });
 
-// Функция для перехода в подкатегории (например, из списка Женщинам)
+// Функция для перехода в подкатегории
 window.openSubCategory = (id) => {
   nestedTitle.textContent = 'Товары';
   nestedContent.innerHTML = `<div class="product-grid">
