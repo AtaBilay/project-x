@@ -309,22 +309,29 @@ details p { color: #555; font-size: 14px; }
 .currency-info p { margin: 0; font-size: 13px; color: #999; }
 .rate { font-weight: bold; font-size: 14px; color: var(--text); }
 
-.menu-list { margin: 0 15px; }
-.menu-item {
+/* ОБЪЕДИНЕННАЯ ПЛАШКА НАСТРОЙКИ/FAQ */
+.grouped-card {
   background: white;
+  margin: 0 15px 15px;
   border-radius: 20px;
-  padding: 15px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.grouped-item {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
-  box-shadow: var(--shadow);
+  padding: 15px;
 }
-.menu-item .icon-circle { background: var(--blue-light); color: var(--blue); }
-.menu-item h4 { margin: 0; font-size: 16px; }
-.menu-item p { margin: 0; font-size: 13px; color: #999; }
-.menu-item .arrow { margin-left: auto; font-size: 24px; color: #ccc; }
+.grouped-item h4 { margin: 0; font-size: 16px; }
+.grouped-item p { margin: 0; font-size: 13px; color: #999; }
+.grouped-item .arrow { margin-left: auto; font-size: 24px; color: #ccc; }
+.divider {
+  height: 1px;
+  background: #eee;
+  margin-left: 15px;
+}
 
-/* НАСТРОЙКИ (Новые стили) */
+/* НАСТРОЙКИ */
 .settings-header {
   display: flex;
   align-items: center;
@@ -400,6 +407,47 @@ details p { color: #555; font-size: 14px; }
 }
 .shield { font-size: 24px; margin-right: 15px; }
 .settings-info-box div { font-size: 13px; color: #555; flex: 1; }
+
+/* FAQ */
+.faq-subtitle {
+  padding: 0 15px 15px;
+  font-size: 14px;
+  color: var(--gray-text);
+}
+#faq-list {
+  padding: 0 15px 15px;
+}
+.faq-item {
+  background: white;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+}
+.faq-answer {
+  padding: 0 15px 15px;
+  color: #555;
+  font-size: 14px;
+  display: none;
+}
+.faq-item.open .faq-answer {
+  display: block;
+}
+.faq-chevron {
+  transition: transform 0.2s ease;
+}
+.faq-item.open .faq-chevron {
+  transform: rotate(180deg);
+}
 
 /* ЭКРАН ИЗБРАННОГО */
 .inner-header { display: flex; gap: 10px; padding: 20px 15px; align-items: center; }
