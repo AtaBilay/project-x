@@ -1,6 +1,5 @@
-import { categories, products, suppliers } from './data.js';
+import { categories, hotDeals, topProducts, suppliers, subCategories, blouses, promoProducts, faqData } from './data.js';
 
-// Инициализация Telegram
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
@@ -9,67 +8,146 @@ tg?.expand();
 const tabs = document.querySelectorAll('.tab-item');
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
-    // Убираем активный класс со всех
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     
-    // Добавляем активный
     tab.classList.add('active');
-    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    document.getElementById('screen-' + tab.dataset.tab).classList.add('active');
   });
 });
 
-// Отрисовка сетки категорий на главной
-const catContainer = document.getElementById('home-categories');
+// Рендер категорий на главной
+const categoryGrid = document.getElementById('category-grid');
 categories.forEach(cat => {
   const card = document.createElement('div');
   card.className = 'cat-card';
-  card.innerHTML = `
-    <div style="height: 80px; background: ${cat.color}; display: flex; justify-content: center; align-items: center; font-size: 40px;">${cat.icon}</div>
-    <div style="padding: 10px; font-weight: bold;">${cat.title}</div>
-  `;
+  card.innerHTML = `<img src="${cat.image}" alt="${cat.title}"><div>${cat.title}</div>`;
   card.addEventListener('click', () => openCategory(cat));
-  catContainer.appendChild(card);
+  categoryGrid.appendChild(card);
 });
 
-// Функция открытия категории (вложенная навигация)
+// Рендер горячих предложений
+const hotScroll = document.getElementById('hot-scroll');
+hotDeals.forEach(p => {
+  hotScroll.innerHTML += `
+    <div class="product-mini">
+      <div style="position:relative;">
+        ${p.hot ? '<span class="hot-badge">🔥 Hot</span>' : ''}
+        <img src="${p.image}">
+      </div>
+      <h4>${p.name}</h4>
+      <p class="price">${p.price} ₽</p>
+    </div>
+  `;
+});
+
+// Рендер топ товаров
+const topScroll = document.getElementById('top-scroll');
+topProducts.forEach(p => {
+  topScroll.innerHTML += `
+    <div class="product-mini">
+      <div style="position:relative;">
+        <img src="${p.image}">
+      </div>
+      <h4>${p.name}</h4>
+      <p class="price">${p.price} ₽</p>
+    </div>
+  `;
+});
+
+// Рендер поставщиков недели
+const supplierList = document.getElementById('supplier-list');
+suppliers.forEach(s => {
+  supplierList.innerHTML += `
+    <div class="supplier-item">
+      <img src="${s.logo}">
+      <div>
+        <h4>${s.name}</h4>
+        <p>${s.desc}</p>
+      </div>
+    </div>
+  `;
+});
+
+// Рендер FAQ (аккордеон)
+const faqAccordion = document.getElementById('faq-accordion');
+faqData.forEach(item => {
+  faqAccordion.innerHTML += `
+    <details>
+      <summary>${item.q}</summary>
+      <p>${item.a}</p>
+    </details>
+  `;
+});
+
+// Логика вложенных экранов
+const nestedScreen = document.getElementById('nested-screen');
+const nestedTitle = document.getElementById('nested-title');
+const nestedContent = document.getElementById('nested-content');
+
 function openCategory(cat) {
-  const nested = document.getElementById('nested-screen');
-  const title = document.getElementById('nested-title');
-  const content = document.getElementById('nested-content');
-  
-  title.textContent = cat.title;
-  nested.classList.remove('hidden');
+  nestedTitle.textContent = cat.title;
+  nestedScreen.classList.remove('hidden');
   
   if (cat.id === 'suppliers') {
-    // Рендерим поставщиков
-    content.innerHTML = suppliers.map(s => `
-      <div style="display:flex; align-items:center; background:white; padding:15px; margin:10px; border-radius:12px;">
-        <img src="${s.logo}" style="width:50px; height:50px; border-radius:8px; margin-right:15px;">
-        <div>
-          <h4 style="margin:0;">${s.name}</h4>
-          <p style="margin:0; color:grey; font-size:14px;">${s.desc}</p>
-        </div>
+    nestedContent.innerHTML = suppliers.map(s => `
+      <div class="list-item">
+        <img src="${s.logo}">
+        <div><h4>${s.name}</h4><p style="color:#888; margin:5px 0 0;">${s.desc}</p></div>
       </div>
     `).join('');
-  } else {
-    // Рендерим товары
-    const filteredProducts = products.filter(p => p.category === cat.id);
-    content.innerHTML = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:10px;">
-      ${filteredProducts.map(p => `
-        <div style="background:white; border-radius:12px; overflow:hidden;">
-          <img src="${p.image}" style="width:100%; height:150px; object-fit:cover;">
-          <div style="padding:10px;">
-            <b>${p.price} ₽</b>
-            <p style="margin:0; font-size:14px;">${p.title}</p>
+  } else if (cat.id === 'women') {
+    // Показываем список подкатегорий
+    nestedContent.innerHTML = subCategories.map(sub => `
+      <div class="list-item" onclick="openSubCategory('${sub.id}')">
+        <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">${sub.icon}</div>
+        <h4>${sub.title}</h4>
+      </div>
+    `).join('');
+  } else if (cat.id === 'promo') {
+    // Рендер сетки акций
+    nestedContent.innerHTML = `<div class="product-grid">
+      ${promoProducts.map(p => `
+        <div class="product-card">
+          <div style="position:relative;">
+            ${p.hot ? '<span class="hot-badge">🔥 Hot</span>' : ''}
+            ${p.discount ? `<span class="discount" style="top: auto; bottom: 10px; left: 10px;">${p.discount}</span>` : ''}
+            <img src="${p.image}" style="width:100%; height:180px; object-fit:cover;">
           </div>
+          <p class="price">${p.price} ₽ ${p.oldPrice ? `<span class="old-price">${p.oldPrice} ₽</span>` : ''}</p>
+          <h4>${p.name}</h4>
+        </div>
+      `).join('')}
+    </div>`;
+  } else {
+    // Дефолтный рендер товаров
+    nestedContent.innerHTML = `<div class="product-grid">
+      ${blouses.map(p => `
+        <div class="product-card">
+          <img src="${p.image}" style="width:100%; height:180px; object-fit:cover;">
+          <p class="price">${p.price} ₽</p>
+          <h4>${p.name}</h4>
         </div>
       `).join('')}
     </div>`;
   }
 }
 
-// Кнопка назад
-function goBack() {
-  document.getElementById('nested-screen').classList.add('hidden');
-}
+// Кнопка "Назад"
+document.getElementById('back-btn').addEventListener('click', () => {
+  nestedScreen.classList.add('hidden');
+});
+
+// Функция для перехода в подкатегории (например, из списка Женщинам)
+window.openSubCategory = (id) => {
+  nestedTitle.textContent = 'Товары';
+  nestedContent.innerHTML = `<div class="product-grid">
+    ${blouses.map(p => `
+      <div class="product-card">
+        <img src="${p.image}">
+        <p class="price">${p.price} ₽</p>
+        <h4>${p.name}</h4>
+      </div>
+    `).join('')}
+  </div>`;
+};
