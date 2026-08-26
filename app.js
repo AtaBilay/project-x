@@ -59,7 +59,6 @@ favTabs.forEach(tab => {
   tab.addEventListener('click', () => {
     favTabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-
     if (tab.dataset.tab === 'suppliers') {
       favSearchBar.classList.add('suppliers-mode');
     } else {
@@ -84,52 +83,68 @@ sortOptions.forEach(option => {
   });
 });
 
+// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ (ПЕРЕНЕС ВЫШЕ) ==================
+const openSettingsBtn = document.getElementById('open-settings-btn');
+const settingsBackBtn = document.getElementById('settings-back-btn');
+const openFaqBtn = document.getElementById('open-faq-btn');
+const faqBackBtn = document.getElementById('faq-back-btn');
+
+// Добавил проверки на null, чтобы код не падал, если HTML не обновился
+if (openSettingsBtn) {
+  openSettingsBtn.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-settings').classList.add('active');
+  });
+}
+if (settingsBackBtn) {
+  settingsBackBtn.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-profile').classList.add('active');
+  });
+}
+if (openFaqBtn) {
+  openFaqBtn.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-faq').classList.add('active');
+  });
+}
+if (faqBackBtn) {
+  faqBackBtn.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-profile').classList.add('active');
+  });
+}
+
 // ================== ПРОФИЛЬ ==================
 document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
 document.getElementById('user-username').textContent = tgUser?.username ? '@' + tgUser.username : 'Нет username';
 
 async function initProfile() {
-  const isAdmin = await checkIfAdmin(currentUserId);
-  if (isAdmin) document.getElementById('admin-panel-btn').style.display = 'block';
+  try {
+    const isAdmin = await checkIfAdmin(currentUserId);
+    if (isAdmin) document.getElementById('admin-panel-btn').style.display = 'block';
+  } catch (e) {
+    console.log("Ошибка проверки админа:", e);
+  }
 }
 initProfile();
 
-// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ (ВЕРНУЛ ОБРАБОТЧИКИ!) ==================
-const openSettingsBtn = document.getElementById('open-settings-btn');
-const settingsBackBtn = document.getElementById('settings-back-btn');
-
-const openFaqBtn = document.getElementById('open-faq-btn');
-const faqBackBtn = document.getElementById('faq-back-btn');
-
-openSettingsBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-settings').classList.add('active');
-});
-
-settingsBackBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-profile').classList.add('active');
-});
-
-openFaqBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-faq').classList.add('active');
-});
-
-faqBackBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-profile').classList.add('active');
-});
-
 // ================== АДМИНКА ==================
-document.getElementById('admin-panel-btn').addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-admin').classList.add('active');
-});
-document.getElementById('admin-back-btn').onclick = () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-profile').classList.add('active');
-};
+const adminPanelBtn = document.getElementById('admin-panel-btn');
+const adminBackBtn = document.getElementById('admin-back-btn');
+
+if (adminPanelBtn) {
+  adminPanelBtn.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-admin').classList.add('active');
+  });
+}
+if (adminBackBtn) {
+  adminBackBtn.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-profile').classList.add('active');
+  });
+}
 
 // ================== ДОБАВЛЕНИЕ ТОВАРА (МНОГО ФОТО) ==================
 document.getElementById('btn-add-product').onclick = async () => {
