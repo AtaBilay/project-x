@@ -64,16 +64,23 @@
       </div>
     </div>
 
-    <!-- ИЗБРАННОЕ -->
+    <!-- ИЗБРАННОЕ (ОБНОВЛЕНО) -->
     <div id="screen-favorites" class="screen">
-      <div class="inner-header">
-        <input type="text" placeholder="Найти в избранном">
-        <button class="sort-btn">⇅</button>
+      <div class="favorites-search-container">
+        <div class="search-bar-favorites" id="fav-search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Найти в избранном">
+          <button class="sort-btn" id="favorites-sort-btn">⇅</button>
+        </div>
       </div>
-      
-      <div class="tabs">
-        <div class="tab-btn active">Товары <span class="count">0</span></div>
-        <div class="tab-btn">Поставщики <span class="count">0</span></div>
+
+      <div class="favorites-tabs">
+        <div class="favorites-tab active" data-tab="products">
+          <span class="tab-text">Товары</span> <span class="tab-badge">0</span>
+        </div>
+        <div class="favorites-tab" data-tab="suppliers">
+          <span class="tab-text">Поставщики</span> <span class="tab-badge">0</span>
+        </div>
       </div>
 
       <div class="empty-state">
@@ -108,7 +115,6 @@
         <div class="rate">1 ₽ = <span id="kzt-rate">5,94</span> ₸</div>
       </div>
 
-      <!-- Объединенная плашка -->
       <div class="grouped-card">
         <div class="grouped-item" id="open-settings-btn" style="cursor:pointer;">
           <div class="icon-circle">⚙️</div>
@@ -210,6 +216,24 @@
       <span class="icon">👤</span>
     </div>
   </nav>
+
+  <!-- МОДАЛКА СОРТИРОВКИ (ОБНОВЛЕНА) -->
+  <div id="sort-modal" class="sort-modal hidden">
+    <div class="sort-modal-backdrop" id="sort-modal-backdrop"></div>
+    <div class="sort-modal-content">
+      <div class="drag-handle"></div>
+      <h3>Какие товары показать сначала</h3>
+      <div class="sort-option" data-value="cheap">
+        <span>Дешевле</span> <span class="radio-btn"></span>
+      </div>
+      <div class="sort-option" data-value="expensive">
+        <span>Дороже</span> <span class="radio-btn"></span>
+      </div>
+      <div class="sort-option active" data-value="new">
+        <span>Новинки</span> <span class="radio-btn selected"></span>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>
