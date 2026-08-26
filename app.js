@@ -46,7 +46,7 @@ tabs.forEach(tab => {
   });
 });
 
-// ================== ИЗБРАННОЕ: ПЕРЕКЛЮЧЕНИЕ И ФИЛЬТРЫ (ВОЗВРАЩЕНО) ==================
+// ================== ИЗБРАННОЕ: ПЕРЕКЛЮЧЕНИЕ И ФИЛЬТРЫ ==================
 const favTabs = document.querySelectorAll('.favorites-tab');
 const favSearchBar = document.getElementById('fav-search-bar');
 const favoritesSortBtn = document.getElementById('favorites-sort-btn');
@@ -83,7 +83,6 @@ sortOptions.forEach(option => {
     sortModal.classList.add('hidden');
   });
 });
-// ==================================================================================
 
 // ================== ПРОФИЛЬ ==================
 document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
@@ -95,6 +94,34 @@ async function initProfile() {
 }
 initProfile();
 
+// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ (ВЕРНУЛ ОБРАБОТЧИКИ!) ==================
+const openSettingsBtn = document.getElementById('open-settings-btn');
+const settingsBackBtn = document.getElementById('settings-back-btn');
+
+const openFaqBtn = document.getElementById('open-faq-btn');
+const faqBackBtn = document.getElementById('faq-back-btn');
+
+openSettingsBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-settings').classList.add('active');
+});
+
+settingsBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
+
+openFaqBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-faq').classList.add('active');
+});
+
+faqBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
+
+// ================== АДМИНКА ==================
 document.getElementById('admin-panel-btn').addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin').classList.add('active');
