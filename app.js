@@ -1,281 +1,306 @@
-import { categories, hotDeals, topProducts, suppliers, subCategories, blouses, promoProducts, faqData } from './data.js';
+const TG = window.Telegram?.WebApp;
+TG?.ready(); TG?.expand();
 
-const tg = window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand();
+const SUPABASE_URL = "https://chvwhwxqpeacuiyccexw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uMKtRMhQPVglw2Hhg0RImQ_FRFByVIr";
 
-// ================== ЛОГИКА ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ==================
-const tgUser = tg?.initDataUnsafe?.user;
+const tgUser = TG?.initDataUnsafe?.user;
+let currentUserId = tgUser?.id || null;
 
-if (tgUser) {
-  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
-  document.getElementById('user-name').textContent = fullName || 'Пользователь';
-
-  const tgUsername = tgUser.username;
-  document.getElementById('user-username').textContent = tgUsername ? '@' + tgUsername : 'Без username';
-
-  if (tgUser.photo_url) {
-    document.getElementById('user-avatar').src = tgUser.photo_url;
-  } else {
-    const firstLetter = fullName ? fullName[0].toUpperCase() : 'U';
-    document.getElementById('user-avatar').src = `https://via.placeholder.com/60/007AFF/FFFFFF?text=${firstLetter}`;
-  }
-} else {
-  document.getElementById('user-name').textContent = 'Откройте в Telegram';
-  document.getElementById('user-username').textContent = '@not_telegram';
-  document.getElementById('user-avatar').src = 'https://via.placeholder.com/60/FF0000/FFFFFF?text=?';
+// ================== АДМИН-ЧЕК ==================
+async function checkIfAdmin(userId) {
+  if (!userId) return false;
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/admins?telegram_id=eq.${userId}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  });
+  const data = await response.json();
+  return data.length > 0;
 }
-// ================================================================
 
-// ================== ПОДКЛЮЧЕНИЕ КУРСА ВАЛЮТ (БАНК) ==================
-async function fetchCurrencyRate() {
-  const rateElement = document.getElementById('kzt-rate');
-  try {
-    const response = await fetch('https://open.er-api.com/v6/latest/RUB');
-    const data = await response.json();
-    
-    if (data && data.rates && data.rates.KZT) {
-      const rate = data.rates.KZT.toFixed(2);
-      rateElement.textContent = rate;
-    } else {
-      throw new Error('Rate not found');
-    }
-  } catch (e) {
-    console.log('Ошибка получения курса, использую резервный 5,94');
-    rateElement.textContent = '5,94';
+// ================== ЗАГРУЗКА ФОТО (добавили bucket) ==================
+async function uploadImage(file, bucket = 'product-images') {
+  const path = `${Date.now()}_${file.name}`;
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type },
+    body: file
+  });
+
+  if (response.ok) {
+    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
   }
+  
+  alert(`Ошибка загрузки фото! Проверь, что создан бакет '${bucket}' в Supabase.`);
+  return null;
 }
-fetchCurrencyRate();
-// ======================================================================
 
-// Переключение вкладок
+// ================== ПОЛУЧЕНИЕ ДАННЫХ ==================
+async function fetchData(endpoint) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  });
+  return await response.json();
+}
+
+// ================== РЕНДЕР ГЛАВНОЙ ==================
+async function loadCategories() {
+  const categories = await fetchData('categories');
+  const grid = document.getElementById('category-grid');
+  grid.innerHTML = '';
+  categories.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
+    card.onclick = () => openCategory(cat);
+    grid.appendChild(card);
+  });
+}
+
+// ================== НАВИГАЦИЯ ==================
 const tabs = document.querySelectorAll('.tab-item');
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    
     tab.classList.add('active');
     document.getElementById('screen-' + tab.dataset.tab).classList.add('active');
   });
 });
 
-// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ ==================
-const openSettingsBtn = document.getElementById('open-settings-btn');
-const settingsBackBtn = document.getElementById('settings-back-btn');
-const openFaqBtn = document.getElementById('open-faq-btn');
-const faqBackBtn = document.getElementById('faq-back-btn');
+// ================== ПРОФИЛЬ ==================
+document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
+document.getElementById('user-username').textContent = tgUser?.username ? '@' + tgUser.username : 'Нет username';
 
-openSettingsBtn.addEventListener('click', () => {
+async function initProfile() {
+  const isAdmin = await checkIfAdmin(currentUserId);
+  if (isAdmin) {
+    document.getElementById('admin-panel-btn').style.display = 'block';
+  }
+}
+initProfile();
+
+document.getElementById('admin-panel-btn').addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-settings').classList.add('active');
+  document.getElementById('screen-admin').classList.add('active');
 });
 
-settingsBackBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-profile').classList.add('active');
-});
-
-openFaqBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-faq').classList.add('active');
-});
-
-faqBackBtn.addEventListener('click', () => {
+document.getElementById('admin-back-btn').onclick = () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-profile').classList.add('active');
-});
-// ==============================================================
+};
 
-// ================== ИЗБРАННОЕ: ПЕРЕКЛЮЧЕНИЕ ТАБОВ И СОРТИРОВКА ==================
-const favTabs = document.querySelectorAll('.favorites-tab');
-const favSearchBar = document.getElementById('fav-search-bar');
-const favoritesSortBtn = document.getElementById('favorites-sort-btn');
-
-favTabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    favTabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-
-    if (tab.dataset.tab === 'suppliers') {
-      // Прячем фильтры и расширяем поиск
-      favSearchBar.classList.add('suppliers-mode');
-    } else {
-      // Возвращаем фильтры
-      favSearchBar.classList.remove('suppliers-mode');
-    }
+// ================== ДОБАВЛЕНИЕ ТОВАРА ==================
+document.getElementById('btn-add-product').onclick = async () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-admin-product').classList.add('active');
+  
+  const categories = await fetchData('categories');
+  const catSelect = document.getElementById('product-category');
+  catSelect.innerHTML = '';
+  categories.forEach(cat => {
+    catSelect.innerHTML += `<option value="${cat.id}">${cat.title}</option>`;
   });
-});
+  loadSubsAndSuppliers();
+};
 
-// Логика модального окна сортировки
-const sortModal = document.getElementById('sort-modal');
-const sortModalBackdrop = document.getElementById('sort-modal-backdrop');
-const sortOptions = document.querySelectorAll('.sort-option');
+async function loadSubsAndSuppliers() {
+  const subcats = await fetchData('subcategories');
+  const suppliers = await fetchData('suppliers');
+  
+  const subSelect = document.getElementById('product-subcategory');
+  const supSelect = document.getElementById('product-supplier');
+  
+  subSelect.innerHTML = '<option value="">Выберите тип...</option>';
+  subcats.forEach(sub => subSelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`);
 
-favoritesSortBtn.addEventListener('click', () => {
-  sortModal.classList.remove('hidden');
-});
+  supSelect.innerHTML = '<option value="">Выберите поставщика...</option>';
+  suppliers.forEach(sup => supSelect.innerHTML += `<option value="${sup.id}">${sup.name}</option>`);
+}
 
-sortModalBackdrop.addEventListener('click', () => {
-  sortModal.classList.add('hidden');
-});
+document.getElementById('product-back-btn').onclick = () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-admin').classList.add('active');
+};
 
-sortOptions.forEach(option => {
-  option.addEventListener('click', () => {
-    sortOptions.forEach(opt => opt.classList.remove('active'));
-    option.classList.add('active');
-    sortModal.classList.add('hidden');
+document.getElementById('save-product-btn').onclick = async () => {
+  const title = document.getElementById('product-title').value;
+  const price = document.getElementById('product-price').value;
+  const oldPrice = document.getElementById('product-old-price').value;
+  const discount = document.getElementById('product-discount').value;
+  const desc = document.getElementById('product-desc').value;
+  const subId = document.getElementById('product-subcategory').value;
+  const supId = document.getElementById('product-supplier').value;
+  const imgFile = document.getElementById('product-image').files[0];
+
+  if (!title || !price) return alert("Заполни название и цену!");
+  
+  let imgUrl = "https://via.placeholder.com/200";
+  if (imgFile) {
+    const uploaded = await uploadImage(imgFile, 'product-images'); // <- бакет для товаров
+    if (uploaded) imgUrl = uploaded;
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify({
+      subcategory_id: subId || null,
+      supplier_id: supId || null,
+      title,
+      price,
+      old_price: oldPrice || null,
+      discount,
+      description: desc,
+      image_url: imgUrl,
+      is_hot: discount ? true : false
+    })
   });
-});
-// ==================================================================================
 
-// Рендер категорий на главной
-const categoryGrid = document.getElementById('category-grid');
-categories.forEach(cat => {
-  const card = document.createElement('div');
-  card.className = 'cat-card';
-  card.innerHTML = `<img src="${cat.image}" alt="${cat.title}"><div>${cat.title}</div>`;
-  card.addEventListener('click', () => openCategory(cat));
-  categoryGrid.appendChild(card);
-});
+  if (response.ok) {
+    alert("Товар добавлен!");
+    loadCategories();
+  } else {
+    alert("Ошибка при добавлении!");
+  }
+};
 
-// Рендер горячих предложений
-const hotScroll = document.getElementById('hot-scroll');
-hotDeals.forEach(p => {
-  hotScroll.innerHTML += `
-    <div class="product-mini">
-      <div style="position:relative;">
-        ${p.hot ? '<span class="hot-badge">🔥 Hot</span>' : ''}
-        <img src="${p.image}">
-      </div>
-      <h4>${p.name}</h4>
-      <p class="price">${p.price} ₽</p>
-    </div>
-  `;
-});
+// ================== ДОБАВЛЕНИЕ ПОСТАВЩИКА ==================
+document.getElementById('btn-add-supplier').onclick = () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-admin-supplier').classList.add('active');
+};
 
-// Рендер топ товаров
-const topScroll = document.getElementById('top-scroll');
-topProducts.forEach(p => {
-  topScroll.innerHTML += `
-    <div class="product-mini">
-      <div style="position:relative;">
-        <img src="${p.image}">
-      </div>
-      <h4>${p.name}</h4>
-      <p class="price">${p.price} ₽</p>
-    </div>
-  `;
-});
+document.getElementById('supplier-back-btn').onclick = () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-admin').classList.add('active');
+};
 
-// Рендер поставщиков недели
-const supplierList = document.getElementById('supplier-list');
-suppliers.forEach(s => {
-  supplierList.innerHTML += `
-    <div class="supplier-item">
-      <img src="${s.logo}">
-      <div>
-        <h4>${s.name}</h4>
-        <p>${s.desc}</p>
-      </div>
-    </div>
-  `;
-});
+document.getElementById('save-supplier-btn').onclick = async () => {
+  const name = document.getElementById('supplier-name').value;
+  const desc = document.getElementById('supplier-desc').value;
+  const logoFile = document.getElementById('supplier-logo').files[0];
 
-// Рендер FAQ на главной (аккордеон)
-const faqAccordion = document.getElementById('faq-accordion');
-faqData.slice(0, 3).forEach(item => {
-  faqAccordion.innerHTML += `
-    <details>
-      <summary>${item.q}</summary>
-      <p>${item.a}</p>
-    </details>
-  `;
-});
+  if (!name) return alert("Введите название поставщика!");
 
-// Рендер FAQ на отдельном экране
+  let logoUrl = "https://via.placeholder.com/50";
+  if (logoFile) {
+    const uploaded = await uploadImage(logoFile, 'supplier-images'); // <- бакет для поставщиков!
+    if (uploaded) logoUrl = uploaded;
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/suppliers`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: name,
+      description: desc,
+      logo_url: logoUrl
+    })
+  });
+
+  if (response.ok) {
+    alert("Поставщик добавлен!");
+    document.getElementById('supplier-name').value = '';
+    document.getElementById('supplier-desc').value = '';
+    document.getElementById('supplier-logo').value = '';
+  } else {
+    alert("Ошибка при добавлении поставщика!");
+  }
+};
+
+// ================== МОДАЛКА ДЛЯ КАТЕГОРИЙ И ТИПОВ ==================
+const modal = document.getElementById('create-modal');
+let modalType = 'category';
+
+document.getElementById('btn-add-category').onclick = () => openCreateModal('category', 'Новый раздел');
+document.getElementById('btn-add-subcategory').onclick = () => openCreateModal('subcategory', 'Новый тип');
+
+function openCreateModal(type, title) {
+  modalType = type;
+  document.getElementById('modal-title').textContent = title;
+  modal.classList.remove('hidden');
+}
+
+document.getElementById('modal-cancel-btn').onclick = () => modal.classList.add('hidden');
+
+document.getElementById('modal-save-btn').onclick = async () => {
+  const name = document.getElementById('modal-name').value;
+  const imgFile = document.getElementById('modal-image').files[0];
+  
+  if (!name) return alert("Введите название!");
+  
+  let url = null;
+  if (imgFile) {
+    const uploaded = await uploadImage(imgFile, 'category-images'); // <- бакет для категорий/иконок!
+    if (uploaded) url = uploaded;
+  }
+
+  let table = 'categories';
+  let body = { title: name, image_url: url };
+  
+  if (modalType === 'subcategory') {
+    table = 'subcategories';
+    const cats = await fetchData('categories');
+    body = { title: name, image_url: url, category_id: cats[0]?.id || 1 };
+  }
+
+  await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  modal.classList.add('hidden');
+  alert("Создано!");
+};
+
+// ================== FAQ ==================
+const faqData = [
+  { q: 'Как оформить заказ?', a: 'Откройте пост поставщика. Перейдите по ссылке. Свяжитесь с поставщиком напрямую.' },
+  { q: 'Подписка оплачивается один раз?', a: 'Подписка является ежемесячной.' }
+];
+
 const faqList = document.getElementById('faq-list');
 faqData.forEach(item => {
   const div = document.createElement('div');
   div.className = 'faq-item';
-  div.innerHTML = `
-    <div class="faq-question">
-      <span>${item.q}</span>
-      <span class="faq-chevron">⌄</span>
-    </div>
-    <div class="faq-answer">${item.a}</div>
-  `;
-  div.querySelector('.faq-question').addEventListener('click', () => {
-    div.classList.toggle('open');
-  });
+  div.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`;
+  div.querySelector('.faq-question').onclick = () => div.classList.toggle('open');
   faqList.appendChild(div);
 });
 
-// Логика вложенных экранов
+// ================== ВЛОЖЕННЫЕ ЭКРАНЫ ==================
 const nestedScreen = document.getElementById('nested-screen');
 const nestedTitle = document.getElementById('nested-title');
 const nestedContent = document.getElementById('nested-content');
 
-function openCategory(cat) {
+async function openCategory(cat) {
   nestedTitle.textContent = cat.title;
   nestedScreen.classList.remove('hidden');
-  
-  if (cat.id === 'suppliers') {
-    nestedContent.innerHTML = suppliers.map(s => `
-      <div class="list-item">
-        <img src="${s.logo}">
-        <div><h4>${s.name}</h4><p style="color:#888; margin:5px 0 0;">${s.desc}</p></div>
-      </div>
-    `).join('');
-  } else if (cat.id === 'women') {
-    nestedContent.innerHTML = subCategories.map(sub => `
-      <div class="list-item" onclick="openSubCategory('${sub.id}')">
-        <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">${sub.icon}</div>
-        <h4>${sub.title}</h4>
-      </div>
-    `).join('');
-  } else if (cat.id === 'promo') {
-    nestedContent.innerHTML = `<div class="product-grid">
-      ${promoProducts.map(p => `
-        <div class="product-card">
-          <div style="position:relative;">
-            ${p.hot ? '<span class="hot-badge">🔥 Hot</span>' : ''}
-            ${p.discount ? `<span class="discount" style="top: auto; bottom: 10px; left: 10px;">${p.discount}</span>` : ''}
-            <img src="${p.image}" style="width:100%; height:180px; object-fit:cover;">
-          </div>
-          <p class="price">${p.price} ₽ ${p.oldPrice ? `<span class="old-price">${p.oldPrice} ₽</span>` : ''}</p>
-          <h4>${p.name}</h4>
-        </div>
-      `).join('')}
-    </div>`;
-  } else {
-    nestedContent.innerHTML = `<div class="product-grid">
-      ${blouses.map(p => `
-        <div class="product-card">
-          <img src="${p.image}" style="width:100%; height:180px; object-fit:cover;">
-          <p class="price">${p.price} ₽</p>
-          <h4>${p.name}</h4>
-        </div>
-      `).join('')}
-    </div>`;
-  }
+
+  const subcats = await fetchData(`subcategories?category_id=eq.${cat.id}`);
+  nestedContent.innerHTML = subcats.map(sub => `
+    <div class="list-item" onclick="openProducts('${sub.id}')">
+      <img src="${sub.image_url}"><h4>${sub.title}</h4>
+    </div>
+  `).join('');
 }
 
-// Кнопка "Назад" на вложенных экранах
-document.getElementById('back-btn').addEventListener('click', () => {
-  nestedScreen.classList.add('hidden');
-});
-
-// Функция для перехода в подкатегории
-window.openSubCategory = (id) => {
+window.openProducts = async (subId) => {
   nestedTitle.textContent = 'Товары';
+  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
   nestedContent.innerHTML = `<div class="product-grid">
-    ${blouses.map(p => `
+    ${products.map(p => `
       <div class="product-card">
-        <img src="${p.image}">
+        <img src="${p.image_url}">
         <p class="price">${p.price} ₽</p>
-        <h4>${p.name}</h4>
+        <h4>${p.title}</h4>
       </div>
     `).join('')}
   </div>`;
 };
+
+document.getElementById('back-btn').onclick = () => nestedScreen.classList.add('hidden');
+
+// ================== СТАРТ ==================
+loadCategories();
