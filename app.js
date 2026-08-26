@@ -35,21 +35,7 @@ async function fetchData(endpoint) {
   return await response.json();
 }
 
-// ================== ГЛАВНАЯ ==================
-async function loadCategories() {
-  const categories = await fetchData('categories');
-  const grid = document.getElementById('category-grid');
-  grid.innerHTML = '';
-  categories.forEach(cat => {
-    const card = document.createElement('div');
-    card.className = 'cat-card';
-    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
-    card.onclick = () => openCategory(cat);
-    grid.appendChild(card);
-  });
-}
-
-// ================== НАВИГАЦИЯ ==================
+// ================== НАВИГАЦИЯ ПО ВКЛАДКАМ ==================
 const tabs = document.querySelectorAll('.tab-item');
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
@@ -59,6 +45,45 @@ tabs.forEach(tab => {
     document.getElementById('screen-' + tab.dataset.tab).classList.add('active');
   });
 });
+
+// ================== ИЗБРАННОЕ: ПЕРЕКЛЮЧЕНИЕ И ФИЛЬТРЫ (ВОЗВРАЩЕНО) ==================
+const favTabs = document.querySelectorAll('.favorites-tab');
+const favSearchBar = document.getElementById('fav-search-bar');
+const favoritesSortBtn = document.getElementById('favorites-sort-btn');
+
+const sortModal = document.getElementById('sort-modal');
+const sortModalBackdrop = document.getElementById('sort-modal-backdrop');
+const sortOptions = document.querySelectorAll('.sort-option');
+
+favTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    favTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    if (tab.dataset.tab === 'suppliers') {
+      favSearchBar.classList.add('suppliers-mode');
+    } else {
+      favSearchBar.classList.remove('suppliers-mode');
+    }
+  });
+});
+
+favoritesSortBtn.addEventListener('click', () => {
+  sortModal.classList.remove('hidden');
+});
+
+sortModalBackdrop.addEventListener('click', () => {
+  sortModal.classList.add('hidden');
+});
+
+sortOptions.forEach(option => {
+  option.addEventListener('click', () => {
+    sortOptions.forEach(opt => opt.classList.remove('active'));
+    option.classList.add('active');
+    sortModal.classList.add('hidden');
+  });
+});
+// ==================================================================================
 
 // ================== ПРОФИЛЬ ==================
 document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
@@ -123,7 +148,6 @@ document.getElementById('save-product-btn').onclick = async () => {
 
   if (!title || !price) return alert("Заполни название и цену!");
 
-  // 1. Создаем сам товар
   const response = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
     method: 'POST',
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
@@ -143,7 +167,6 @@ document.getElementById('save-product-btn').onclick = async () => {
     const productData = await response.json();
     const productId = productData[0].id;
 
-    // 2. Загружаем все фото и привязываем к товару
     for (const file of imageFiles) {
       const uploadedUrl = await uploadImage(file, 'product-images');
       if (uploadedUrl) {
@@ -254,6 +277,19 @@ const nestedScreen = document.getElementById('nested-screen');
 const nestedTitle = document.getElementById('nested-title');
 const nestedContent = document.getElementById('nested-content');
 
+async function loadCategories() {
+  const categories = await fetchData('categories');
+  const grid = document.getElementById('category-grid');
+  grid.innerHTML = '';
+  categories.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
+    card.onclick = () => openCategory(cat);
+    grid.appendChild(card);
+  });
+}
+
 async function openCategory(cat) {
   nestedTitle.textContent = cat.title;
   nestedScreen.classList.remove('hidden');
@@ -265,12 +301,10 @@ async function openCategory(cat) {
   `).join('');
 }
 
-// Обновляем вывод товаров, чтобы показывать несколько фото (точки)
 window.openProducts = async (subId) => {
   nestedTitle.textContent = 'Товары';
   const products = await fetchData(`products?subcategory_id=eq.${subId}`);
   
-  // Получаем все фото для этих товаров
   const productIds = products.map(p => p.id);
   let allImages = [];
   if (productIds.length > 0) {
