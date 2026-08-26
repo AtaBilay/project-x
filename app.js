@@ -60,9 +60,12 @@ tabs.forEach(tab => {
   });
 });
 
-// ================== ПЕРЕХОД В НАСТРОЙКИ ==================
+// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ ==================
 const openSettingsBtn = document.getElementById('open-settings-btn');
 const settingsBackBtn = document.getElementById('settings-back-btn');
+
+const openFaqBtn = document.getElementById('open-faq-btn');
+const faqBackBtn = document.getElementById('faq-back-btn');
 
 // Открыть настройки
 openSettingsBtn.addEventListener('click', () => {
@@ -70,8 +73,20 @@ openSettingsBtn.addEventListener('click', () => {
   document.getElementById('screen-settings').classList.add('active');
 });
 
-// Вернуться в профиль
+// Вернуться в профиль из настроек
 settingsBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
+
+// Открыть FAQ
+openFaqBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-faq').classList.add('active');
+});
+
+// Вернуться в профиль из FAQ
+faqBackBtn.addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-profile').classList.add('active');
 });
@@ -130,15 +145,33 @@ suppliers.forEach(s => {
   `;
 });
 
-// Рендер FAQ (аккордеон)
+// Рендер FAQ на главной (аккордеон)
 const faqAccordion = document.getElementById('faq-accordion');
-faqData.forEach(item => {
+faqData.slice(0, 3).forEach(item => {
   faqAccordion.innerHTML += `
     <details>
       <summary>${item.q}</summary>
       <p>${item.a}</p>
     </details>
   `;
+});
+
+// Рендер FAQ на отдельном экране (с всплывающими окошками)
+const faqList = document.getElementById('faq-list');
+faqData.forEach(item => {
+  const div = document.createElement('div');
+  div.className = 'faq-item';
+  div.innerHTML = `
+    <div class="faq-question">
+      <span>${item.q}</span>
+      <span class="faq-chevron">⌄</span>
+    </div>
+    <div class="faq-answer">${item.a}</div>
+  `;
+  div.querySelector('.faq-question').addEventListener('click', () => {
+    div.classList.toggle('open');
+  });
+  faqList.appendChild(div);
 });
 
 // Логика вложенных экранов
