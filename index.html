@@ -83,7 +83,10 @@
 
     <!-- ПРОФИЛЬ -->
     <div id="screen-profile" class="screen">
-      <div class="header-title">Личный кабинет</div>
+      <div class="profile-header">
+        <div class="small-title">Личный кабинет</div>
+        <div class="big-title">Профиль</div>
+      </div>
 
       <div class="profile-card">
         <img id="user-avatar" src="https://via.placeholder.com/60" class="avatar" alt="Аватар">
@@ -96,18 +99,18 @@
         </div>
       </div>
 
-      <div class="settings-card">
-        <h4>💰 Валюта товаров</h4>
-        <div class="toggle">
-          <span class="active">₽ RUB</span>
-          <span>₸ KZT</span>
+      <div class="settings-card currency-card">
+        <div class="icon-circle">🔄</div>
+        <div class="currency-info">
+          <h4>Валюта товаров</h4>
+          <p>Цены каталога</p>
         </div>
-        <p class="rate">1 ₽ = 5,94 ₸</p>
+        <div class="rate">1 ₽ = <span id="kzt-rate">5,94</span> ₸</div>
       </div>
 
       <div class="menu-list">
         <div class="menu-item">
-          <span class="icon">⚙️</span>
+          <div class="icon-circle">⚙️</div>
           <div>
             <h4>Настройки</h4>
             <p>Подписка и управление доступом</p>
@@ -115,7 +118,7 @@
           <span class="arrow">›</span>
         </div>
         <div class="menu-item">
-          <span class="icon">❓</span>
+          <div class="icon-circle">❓</div>
           <div>
             <h4>FAQ</h4>
             <p>Ответы на частые вопросы</p>
