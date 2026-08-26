@@ -31,7 +31,6 @@ if (tgUser) {
 async function fetchCurrencyRate() {
   const rateElement = document.getElementById('kzt-rate');
   try {
-    // Используем открытое API курсов валют (поддерживает CORS)
     const response = await fetch('https://open.er-api.com/v6/latest/RUB');
     const data = await response.json();
     
@@ -60,6 +59,23 @@ tabs.forEach(tab => {
     document.getElementById('screen-' + tab.dataset.tab).classList.add('active');
   });
 });
+
+// ================== ПЕРЕХОД В НАСТРОЙКИ ==================
+const openSettingsBtn = document.getElementById('open-settings-btn');
+const settingsBackBtn = document.getElementById('settings-back-btn');
+
+// Открыть настройки
+openSettingsBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-settings').classList.add('active');
+});
+
+// Вернуться в профиль
+settingsBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
+// ==============================================================
 
 // Рендер категорий на главной
 const categoryGrid = document.getElementById('category-grid');
@@ -175,7 +191,7 @@ function openCategory(cat) {
   }
 }
 
-// Кнопка "Назад"
+// Кнопка "Назад" на вложенных экранах
 document.getElementById('back-btn').addEventListener('click', () => {
   nestedScreen.classList.add('hidden');
 });
