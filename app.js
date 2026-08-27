@@ -83,37 +83,28 @@ sortOptions.forEach(option => {
   });
 });
 
-// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ (ПЕРЕНЕС ВЫШЕ) ==================
+// ================== ПЕРЕХОД В НАСТРОЙКИ И FAQ ==================
 const openSettingsBtn = document.getElementById('open-settings-btn');
 const settingsBackBtn = document.getElementById('settings-back-btn');
 const openFaqBtn = document.getElementById('open-faq-btn');
 const faqBackBtn = document.getElementById('faq-back-btn');
 
-// Добавил проверки на null, чтобы код не падал, если HTML не обновился
-if (openSettingsBtn) {
-  openSettingsBtn.addEventListener('click', () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-settings').classList.add('active');
-  });
-}
-if (settingsBackBtn) {
-  settingsBackBtn.addEventListener('click', () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-profile').classList.add('active');
-  });
-}
-if (openFaqBtn) {
-  openFaqBtn.addEventListener('click', () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-faq').classList.add('active');
-  });
-}
-if (faqBackBtn) {
-  faqBackBtn.addEventListener('click', () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-profile').classList.add('active');
-  });
-}
+if (openSettingsBtn) openSettingsBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-settings').classList.add('active');
+});
+if (settingsBackBtn) settingsBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
+if (openFaqBtn) openFaqBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-faq').classList.add('active');
+});
+if (faqBackBtn) faqBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
 
 // ================== ПРОФИЛЬ ==================
 document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
@@ -133,18 +124,14 @@ initProfile();
 const adminPanelBtn = document.getElementById('admin-panel-btn');
 const adminBackBtn = document.getElementById('admin-back-btn');
 
-if (adminPanelBtn) {
-  adminPanelBtn.addEventListener('click', () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-admin').classList.add('active');
-  });
-}
-if (adminBackBtn) {
-  adminBackBtn.addEventListener('click', () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-profile').classList.add('active');
-  });
-}
+if (adminPanelBtn) adminPanelBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-admin').classList.add('active');
+});
+if (adminBackBtn) adminBackBtn.addEventListener('click', () => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-profile').classList.add('active');
+});
 
 // ================== ДОБАВЛЕНИЕ ТОВАРА (МНОГО ФОТО) ==================
 document.getElementById('btn-add-product').onclick = async () => {
@@ -300,16 +287,29 @@ document.getElementById('modal-save-btn').onclick = async () => {
   alert("Создано!");
 };
 
-// ================== FAQ ==================
+// ================== FAQ (ВСЕ 8 ВОПРОСОВ + СТРЕЛОЧКИ) ==================
 const faqData = [
-  { q: 'Как оформить заказ?', a: 'Откройте пост поставщика. Перейдите по ссылке. Свяжитесь с поставщиком напрямую.' },
-  { q: 'Подписка оплачивается один раз?', a: 'Подписка является ежемесячной.' }
+  { q: 'Как оформить заказ?', a: 'BAZA — это каталог поставщиков, а не интернет-магазин. Откройте пост поставщика. Перейдите по ссылке в посте. Изучите ассортимент и условия. Свяжитесь с поставщиком напрямую. Согласуйте заказ, доставку и оплату. Все заказы оформляются напрямую у поставщиков.' },
+  { q: 'В MAX у некоторых поставщиков указана ссылка на Telegram. Как сделать заказ?', a: 'Некоторые поставщики пока принимают заказы через Telegram. Если у вас нет возможности открыть Telegram, рекомендуем выбирать поставщиков с сайтом, VK, WhatsApp или другими способами связи. Мы постепенно обновляем контакты поставщиков и добавляем альтернативные способы связи.' },
+  { q: 'Подписка оплачивается один раз или каждый месяц?', a: 'Подписка в BAZA является ежемесячной. Продлевая подписку, Вы сохраняете доступ к ежедневным обновлениям, интересным конкурсам и возможность выиграть ценные призы.' },
+  { q: 'Почему доставка платная?', a: 'Мы не занимаемся доставкой товаров. Стоимость доставки устанавливают транспортные компании. Цена зависит от веса, объёма груза, региона и выбранного способа доставки.' },
+  { q: 'Можно ли оформить возврат?', a: 'Условия возврата зависят от конкретного поставщика. Перед оплатой обязательно уточняйте: ✔️ возможность возврата; ✔️ сроки возврата; ✔️ условия обмена товара. Все договорённости происходят напрямую между покупателем и поставщиком.' },
+  { q: 'Кто принимает оплату за заказ?', a: 'Оплата производится напрямую поставщику. BAZA не принимает оплату за товары и не участвует в сделках между покупателем и продавцом.' },
+  { q: 'Почему поставщик не отвечает сразу?', a: 'У многих поставщиков большой поток обращений. Ответ может поступить в течение суток. Пожалуйста, дождитесь ответа и не отправляйте одно и то же сообщение многократно.' },
+  { q: 'Безопасно ли заказывать через БАЗУ?', a: 'Мы собираем поставщиков в одном месте и проверяем их перед размещением. Однако перед оплатой всегда уточняйте условия работы, доставки и возврата непосредственно у поставщика.' }
 ];
+
 const faqList = document.getElementById('faq-list');
 faqData.forEach(item => {
   const div = document.createElement('div');
   div.className = 'faq-item';
-  div.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`;
+  div.innerHTML = `
+    <div class="faq-question">
+      <span>${item.q}</span>
+      <span class="faq-chevron">⌄</span>
+    </div>
+    <div class="faq-answer">${item.a}</div>
+  `;
   div.querySelector('.faq-question').onclick = () => div.classList.toggle('open');
   faqList.appendChild(div);
 });
