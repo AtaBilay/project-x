@@ -66,8 +66,8 @@
         </div>
       </div>
       
-      <!-- КНОПКА АДМИНКИ: ТЕПЕРЬ ВСЕГДА ВИДНА В HTML -->
-      <div class="grouped-card" id="admin-panel-btn" style="cursor:pointer; margin-top: 15px;">
+      <!-- КНОПКА АДМИНКИ: ВСЕГДА ВИДНА В HTML, НО СКРЫВАЕТСЯ ДЛЯ ОБЫЧНЫХ ПОЛЬЗОВАТЕЛЕЙ -->
+      <div class="grouped-card" id="admin-panel-btn" style="display:block; cursor:pointer; margin-top: 15px;">
         <div class="grouped-item">
           <div class="icon-circle" style="background:#ffe0e0; color:red;">⚙️</div>
           <div><h4>Админ-панель</h4><p>Добавление товаров и категорий</p></div>
@@ -122,6 +122,8 @@
           <input type="file" id="product-images" accept="image/*" multiple>
           <span>📸 Нажми, чтобы выбрать фото</span>
         </label>
+        
+        <div id="image-preview-container" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;"></div>
         
         <button class="admin-big-btn" id="save-product-btn" style="background: #007aff;">💾 Сохранить товар</button>
       </div>
