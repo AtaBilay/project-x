@@ -33,7 +33,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .tag { background: #eee; border-radius: 10px; padding: 2px 8px; }
 .tag.telegram { background: #e0f2fe; color: #007aff; }
 
-/* НОВЫЙ БЕЙДЖ АДМИНА */
 .admin-badge {
   background: #FFE0E0;
   color: #D32F2F;
