@@ -94,7 +94,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 #nested-screen.hidden { display: none; }
 #nested-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; overflow-y: auto; }
 
-/* СТИЛИ ДЛЯ ИНПУТОВ И КНОПОК В МОДАЛКАХ (ВОССТАНОВЛЕНО!) */
+/* СТИЛИ ДЛЯ ИНПУТОВ (ГЛАВНОЕ!) */
 input, textarea, select {
     border: 1px solid #e0e0e0;
     border-radius: 12px;
