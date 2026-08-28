@@ -112,10 +112,11 @@ document.getElementById('user-username').textContent = tgUser?.username ? '@' + 
 async function initProfile() {
   try {
     const isAdmin = await checkIfAdmin(currentUserId);
-    // Если админ — показываем кнопку админки
-    if (isAdmin) {
-      document.getElementById('admin-panel-btn').style.display = 'block';
+    if (!isAdmin) {
+      // Если не админ — скрываем кнопку!
+      document.getElementById('admin-panel-btn').style.display = 'none';
     }
+    // Если админ — оставляем кнопку видимой
   } catch (e) {
     console.log("Ошибка проверки админа:", e);
   }
