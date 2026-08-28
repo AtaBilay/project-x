@@ -111,7 +111,7 @@ if (adminBackBtn) adminBackBtn.addEventListener('click', () => {
   document.getElementById('screen-profile').classList.add('active');
 });
 
-// ================== ДОБАВЛЕНИЕ ТОВАРА (С ПРЕДПРОСМОТРОМ И УДАЛЕНИЕМ) ==================
+// ================== ДОБАВЛЕНИЕ ТОВАРА ==================
 document.getElementById('btn-add-product').onclick = async () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin-product').classList.add('active');
@@ -269,7 +269,7 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   }
 };
 
-// ================== МОДАЛКА КАТЕГОРИЙ (С ПРЕДПРОСМОТРОМ И ПРОВЕРКОЙ) ==================
+// ================== МОДАЛКА КАТЕГОРИЙ ==================
 const modal = document.getElementById('create-modal');
 const modalImageInput = document.getElementById('modal-image');
 const modalPreviewContainer = document.getElementById('modal-image-preview-container');
@@ -316,7 +316,6 @@ document.getElementById('modal-save-btn').onclick = async () => {
   if (!name.trim()) { alert("⚠️ Ты забыл ввести название! Впиши его в поле «Название»."); return; }
   if (!imgFile) { alert("⚠️ Ты не загрузил иконку! Нажми на «📸 Загрузить иконку» и выбери картинку."); return; }
 
-  // Проверка на дубликат
   let table = 'categories';
   if (modalType === 'subcategory') table = 'subcategories';
   
