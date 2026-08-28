@@ -69,11 +69,9 @@ favTabs.forEach(tab => {
 favoritesSortBtn.addEventListener('click', () => {
   sortModal.classList.remove('hidden');
 });
-
 sortModalBackdrop.addEventListener('click', () => {
   sortModal.classList.add('hidden');
 });
-
 sortOptions.forEach(option => {
   option.addEventListener('click', () => {
     sortOptions.forEach(opt => opt.classList.remove('active'));
@@ -105,21 +103,18 @@ if (faqBackBtn) faqBackBtn.addEventListener('click', () => {
   document.getElementById('screen-profile').classList.add('active');
 });
 
-// ================== ПРОФИЛЬ (ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА АДМИНКИ) ==================
+// ================== ПРОФИЛЬ ==================
 document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
 document.getElementById('user-username').textContent = tgUser?.username ? '@' + tgUser.username : 'Нет username';
 
 async function initProfile() {
   try {
     const isAdmin = await checkIfAdmin(currentUserId);
-    // Если НЕ админ — прячем кнопку. Если админ или ошибка — оставляем видимой, чтобы не потерять доступ!
     if (!isAdmin) {
       document.getElementById('admin-panel-btn').style.display = 'none';
     }
   } catch (e) {
     console.log("Ошибка проверки админа:", e);
-    // При ошибке не прячем, чтобы админ не потерял доступ из-за сбоя сети
-    document.getElementById('admin-panel-btn').style.display = 'block';
   }
 }
 initProfile();
@@ -137,7 +132,7 @@ if (adminBackBtn) adminBackBtn.addEventListener('click', () => {
   document.getElementById('screen-profile').classList.add('active');
 });
 
-// ================== ДОБАВЛЕНИЕ ТОВАРА ==================
+// ================== ДОБАВЛЕНИЕ ТОВАРА (С ПРЕДПРОСМОТРОМ И УДАЛЕНИЕМ) ==================
 document.getElementById('btn-add-product').onclick = async () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin-product').classList.add('active');
@@ -150,27 +145,41 @@ document.getElementById('btn-add-product').onclick = async () => {
   loadSubsAndSuppliers();
 };
 
+let selectedFiles = [];
 const imageInput = document.getElementById('product-images');
 const previewContainer = document.getElementById('image-preview-container');
 
 imageInput.addEventListener('change', (e) => {
-  previewContainer.innerHTML = '';
-  const files = Array.from(e.target.files);
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = document.createElement('img');
-      img.src = event.target.result;
-      img.style.width = '80px';
-      img.style.height = '80px';
-      img.style.objectFit = 'cover';
-      img.style.borderRadius = '10px';
-      img.style.marginRight = '10px';
-      previewContainer.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-  });
+    selectedFiles = Array.from(e.target.files);
+    renderImagePreviews();
 });
+
+function renderImagePreviews() {
+    previewContainer.innerHTML = '';
+    selectedFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'preview-wrap';
+
+            const img = document.createElement('img');
+            img.src = event.target.result;
+
+            const delBtn = document.createElement('span');
+            delBtn.className = 'preview-delete';
+            delBtn.textContent = '×';
+            delBtn.onclick = () => {
+                selectedFiles.splice(index, 1);
+                renderImagePreviews();
+            };
+
+            wrap.appendChild(img);
+            wrap.appendChild(delBtn);
+            previewContainer.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 async function loadSubsAndSuppliers() {
   const subcats = await fetchData('subcategories');
@@ -199,11 +208,10 @@ document.getElementById('save-product-btn').onclick = async () => {
   const desc = document.getElementById('product-desc').value;
   const subId = document.getElementById('product-subcategory').value;
   const supId = document.getElementById('product-supplier').value;
-  const imageFiles = document.getElementById('product-images').files;
 
   if (!title.trim()) { alert("⚠️ Ты забыл написать название товара! Впиши его в поле «Название»."); return; }
   if (!price || parseFloat(price) <= 0) { alert("⚠️ Ты забыл указать цену! Впиши её в поле «Цена (₽)»."); return; }
-  if (imageFiles.length === 0) { alert("⚠️ Ты не загрузил ни одного фото! Нажми на кнопку «📸 Нажми, чтобы выбрать фото» и выбери картинку."); return; }
+  if (selectedFiles.length === 0) { alert("⚠️ Ты не загрузил ни одного фото! Нажми на кнопку «📸 Нажми, чтобы выбрать фото» и выбери картинку."); return; }
   if (!subId) { alert("⚠️ Ты не выбрал тип одежды! Нажми на список «Выберите тип...» и выбери нужный."); return; }
   if (!supId) { alert("⚠️ Ты не выбрал поставщика! Нажми на список «Выберите поставщика...» и выбери, от кого товар."); return; }
 
@@ -217,7 +225,7 @@ document.getElementById('save-product-btn').onclick = async () => {
     const productData = await response.json();
     const productId = productData[0].id;
 
-    for (const file of imageFiles) {
+    for (const file of selectedFiles) {
       const uploadedUrl = await uploadImage(file, 'product-images');
       if (uploadedUrl) {
         await fetch(`${SUPABASE_URL}/rest/v1/product_images`, {
@@ -234,7 +242,8 @@ document.getElementById('save-product-btn').onclick = async () => {
     document.getElementById('product-discount').value = '';
     document.getElementById('product-desc').value = '';
     document.getElementById('product-images').value = '';
-    document.getElementById('image-preview-container').innerHTML = '';
+    selectedFiles = [];
+    renderImagePreviews();
 
     alert("✅ Товар успешно добавлен в каталог! Теперь его видят пользователи.");
     loadCategories();
@@ -281,7 +290,7 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   }
 };
 
-// ================== МОДАЛКА КАТЕГОРИЙ ==================
+// ================== МОДАЛКА КАТЕГОРИЙ (С ПРОВЕРКОЙ НА ДУБЛИКАТ) ==================
 const modal = document.getElementById('create-modal');
 let modalType = 'category';
 document.getElementById('btn-add-category').onclick = () => openCreateModal('category', 'Новый раздел');
@@ -295,18 +304,27 @@ document.getElementById('modal-cancel-btn').onclick = () => modal.classList.add(
 document.getElementById('modal-save-btn').onclick = async () => {
   const name = document.getElementById('modal-name').value;
   const imgFile = document.getElementById('modal-image').files[0];
+
   if (!name.trim()) { alert("⚠️ Ты забыл ввести название! Впиши его в поле «Название»."); return; }
   if (!imgFile) { alert("⚠️ Ты не загрузил иконку! Нажми на «📸 Загрузить иконку» и выбери картинку."); return; }
+
+  // Проверка на дубликат
+  let table = 'categories';
+  if (modalType === 'subcategory') table = 'subcategories';
+  
+  const duplicate = await fetchData(`${table}?title=ilike.${encodeURIComponent(name.trim())}`);
+  if (duplicate.length > 0) {
+    alert(`⚠️ Такой раздел уже есть! Название «${name}» уже используется.`);
+    return;
+  }
 
   let url = null;
   if (imgFile) {
     const uploaded = await uploadImage(imgFile, 'category-images');
     if (uploaded) url = uploaded;
   }
-  let table = 'categories';
   let body = { title: name, image_url: url };
   if (modalType === 'subcategory') {
-    table = 'subcategories';
     const cats = await fetchData('categories');
     body = { title: name, image_url: url, category_id: cats[0]?.id || 1 };
   }
@@ -316,7 +334,7 @@ document.getElementById('modal-save-btn').onclick = async () => {
     body: JSON.stringify(body)
   });
   modal.classList.add('hidden');
-  alert("✅ Создано! Теперь это можно выбрать в других формах.");
+  alert("✅ Раздел успешно создан! Теперь ты можешь добавить в него товары.");
 };
 
 // ================== FAQ ==================
