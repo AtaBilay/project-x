@@ -94,6 +94,38 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 #nested-screen.hidden { display: none; }
 #nested-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; overflow-y: auto; }
 
+/* СТИЛИ ДЛЯ ИНПУТОВ И КНОПОК В МОДАЛКАХ (ВОССТАНОВЛЕНО!) */
+input, textarea, select {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 16px;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: white;
+    color: var(--text);
+    outline: none;
+}
+input:focus, textarea:focus, select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+/* КНОПКИ В МОДАЛКАХ */
+.modal-content .admin-big-btn {
+    background: #f2f2f7;
+    border-radius: 15px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    border: none;
+    cursor: pointer;
+}
+.modal-content .admin-big-btn:hover {
+    background: #e2e2e7;
+}
+
 /* СТИЛИ ДЛЯ ДЕТАЛЕЙ ТОВАРА */
 .product-detail-img { width: 100%; height: 250px; object-fit: cover; border-radius: 15px; margin-bottom: 15px; }
 .product-detail-title { font-size: 24px; font-weight: 800; margin: 0 0 10px 0; }
@@ -106,3 +138,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .product-detail-supplier p { margin: 5px 0 0; font-size: 14px; color: #999; }
 .product-card { cursor: pointer; transition: transform 0.2s; }
 .product-card:active { transform: scale(0.98); }
+
+/* Предпросмотр изображений */
+.preview-wrap { position: relative; display: inline-block; margin-right: 10px; margin-bottom: 10px; }
+.preview-wrap img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; display: block; }
+.preview-delete { position: absolute; top: -5px; right: -5px; background: #ff3b30; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
