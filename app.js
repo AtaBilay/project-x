@@ -50,7 +50,6 @@ tabs.forEach(tab => {
 const favTabs = document.querySelectorAll('.favorites-tab');
 const favSearchBar = document.getElementById('fav-search-bar');
 const favoritesSortBtn = document.getElementById('favorites-sort-btn');
-
 const sortModal = document.getElementById('sort-modal');
 const sortModalBackdrop = document.getElementById('sort-modal-backdrop');
 const sortOptions = document.querySelectorAll('.sort-option');
@@ -110,10 +109,37 @@ if (faqBackBtn) faqBackBtn.addEventListener('click', () => {
 document.getElementById('user-name').textContent = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
 document.getElementById('user-username').textContent = tgUser?.username ? '@' + tgUser.username : 'Нет username';
 
+// ================== ФУНКЦИЯ РЕНДЕРА БЕЙДЖА АДМИНА ==================
+function renderAdminBadge() {
+  const profileTags = document.querySelector('.profile-tags');
+  if (!profileTags) return;
+  
+  // Удаляем старый бейдж, если он есть
+  const oldBadge = document.getElementById('admin-badge');
+  if (oldBadge) oldBadge.remove();
+  
+  // Создаем новый бейдж (красная плашка)
+  const badge = document.createElement('span');
+  badge.id = 'admin-badge';
+  badge.className = 'admin-badge';
+  badge.textContent = 'Админ';
+  
+  // Навешиваем клик на админку
+  badge.addEventListener('click', () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-admin').classList.add('active');
+  });
+  
+  profileTags.appendChild(badge);
+}
+
 async function initProfile() {
   try {
     const isAdmin = await checkIfAdmin(currentUserId);
-    if (isAdmin) document.getElementById('admin-panel-btn').style.display = 'block';
+    if (isAdmin) {
+      // Если админ, показываем бейдж в профиле (вместо отдельной кнопки)
+      renderAdminBadge();
+    }
   } catch (e) {
     console.log("Ошибка проверки админа:", e);
   }
@@ -121,13 +147,7 @@ async function initProfile() {
 initProfile();
 
 // ================== АДМИНКА ==================
-const adminPanelBtn = document.getElementById('admin-panel-btn');
 const adminBackBtn = document.getElementById('admin-back-btn');
-
-if (adminPanelBtn) adminPanelBtn.addEventListener('click', () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-admin').classList.add('active');
-});
 if (adminBackBtn) adminBackBtn.addEventListener('click', () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-profile').classList.add('active');
@@ -287,29 +307,16 @@ document.getElementById('modal-save-btn').onclick = async () => {
   alert("Создано!");
 };
 
-// ================== FAQ (ВСЕ 8 ВОПРОСОВ + СТРЕЛОЧКИ) ==================
+// ================== FAQ ==================
 const faqData = [
-  { q: 'Как оформить заказ?', a: 'BAZA — это каталог поставщиков, а не интернет-магазин. Откройте пост поставщика. Перейдите по ссылке в посте. Изучите ассортимент и условия. Свяжитесь с поставщиком напрямую. Согласуйте заказ, доставку и оплату. Все заказы оформляются напрямую у поставщиков.' },
-  { q: 'В MAX у некоторых поставщиков указана ссылка на Telegram. Как сделать заказ?', a: 'Некоторые поставщики пока принимают заказы через Telegram. Если у вас нет возможности открыть Telegram, рекомендуем выбирать поставщиков с сайтом, VK, WhatsApp или другими способами связи. Мы постепенно обновляем контакты поставщиков и добавляем альтернативные способы связи.' },
-  { q: 'Подписка оплачивается один раз или каждый месяц?', a: 'Подписка в BAZA является ежемесячной. Продлевая подписку, Вы сохраняете доступ к ежедневным обновлениям, интересным конкурсам и возможность выиграть ценные призы.' },
-  { q: 'Почему доставка платная?', a: 'Мы не занимаемся доставкой товаров. Стоимость доставки устанавливают транспортные компании. Цена зависит от веса, объёма груза, региона и выбранного способа доставки.' },
-  { q: 'Можно ли оформить возврат?', a: 'Условия возврата зависят от конкретного поставщика. Перед оплатой обязательно уточняйте: ✔️ возможность возврата; ✔️ сроки возврата; ✔️ условия обмена товара. Все договорённости происходят напрямую между покупателем и поставщиком.' },
-  { q: 'Кто принимает оплату за заказ?', a: 'Оплата производится напрямую поставщику. BAZA не принимает оплату за товары и не участвует в сделках между покупателем и продавцом.' },
-  { q: 'Почему поставщик не отвечает сразу?', a: 'У многих поставщиков большой поток обращений. Ответ может поступить в течение суток. Пожалуйста, дождитесь ответа и не отправляйте одно и то же сообщение многократно.' },
-  { q: 'Безопасно ли заказывать через БАЗУ?', a: 'Мы собираем поставщиков в одном месте и проверяем их перед размещением. Однако перед оплатой всегда уточняйте условия работы, доставки и возврата непосредственно у поставщика.' }
+  { q: 'Как оформить заказ?', a: 'Откройте пост поставщика. Перейдите по ссылке. Свяжитесь с поставщиком напрямую.' },
+  { q: 'Подписка оплачивается один раз?', a: 'Подписка является ежемесячной.' }
 ];
-
 const faqList = document.getElementById('faq-list');
 faqData.forEach(item => {
   const div = document.createElement('div');
   div.className = 'faq-item';
-  div.innerHTML = `
-    <div class="faq-question">
-      <span>${item.q}</span>
-      <span class="faq-chevron">⌄</span>
-    </div>
-    <div class="faq-answer">${item.a}</div>
-  `;
+  div.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`;
   div.querySelector('.faq-question').onclick = () => div.classList.toggle('open');
   faqList.appendChild(div);
 });
@@ -346,27 +353,22 @@ async function openCategory(cat) {
 window.openProducts = async (subId) => {
   nestedTitle.textContent = 'Товары';
   const products = await fetchData(`products?subcategory_id=eq.${subId}`);
-  
   const productIds = products.map(p => p.id);
   let allImages = [];
   if (productIds.length > 0) {
     allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
   }
-
   nestedContent.innerHTML = `<div class="product-grid">
     ${products.map(p => {
       const imgs = allImages.filter(img => img.product_id === p.id);
       const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
       const dots = imgs.length > 1 ? `<div style="display:flex; justify-content:center; gap:4px; margin-top:5px;">${imgs.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'#007aff':'#ccc'}"></div>`).join('')}</div>` : '';
-      
-      return `
-        <div class="product-card">
-          <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
-          ${dots}
-          <p class="price">${p.price} ₽</p>
-          <h4>${p.title}</h4>
-        </div>
-      `;
+      return `<div class="product-card">
+        <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
+        ${dots}
+        <p class="price">${p.price} ₽</p>
+        <h4>${p.title}</h4>
+      </div>`;
     }).join('')}
   </div>`;
 };
