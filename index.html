@@ -158,6 +158,17 @@
     </div>
   </div>
 
+  <!-- МОДАЛКА ФИЛЬТРА КАТЕГОРИЙ -->
+  <div id="category-filter-modal" class="modal hidden" style="z-index: 260;">
+    <div class="modal-content" style="padding: 20px; border-radius: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: white; max-height: 80vh; overflow-y: auto;">
+        <div class="drag-handle"></div>
+        <h3 style="margin-top: 0;">Категории</h3>
+        <p style="color: #999; font-size: 14px; margin-bottom: 20px;">Можно выбрать несколько</p>
+        <div id="modal-category-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;"></div>
+        <button class="admin-big-btn" id="close-filter-modal-btn" style="background: #ccc;">Закрыть</button>
+    </div>
+  </div>
+
   <!-- СОРТИРОВКА -->
   <div id="sort-modal" class="sort-modal hidden">
     <div class="sort-modal-backdrop" id="sort-modal-backdrop"></div>
