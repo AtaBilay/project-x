@@ -111,22 +111,28 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-/* НОВЫЕ СТИЛИ ДЛЯ ПОСТАВЩИКОВ */
-.filter-pill {
-    background: #f2f2f7;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--gray-text);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    display: inline-block;
+/* НОВЫЕ СТИЛИ ДЛЯ ПОСТАВЩИКОВ И ФИЛЬТРА */
+.supplier-filter-card {
+    background: white;
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: var(--shadow);
 }
-.filter-pill.active {
-    background: var(--blue);
-    color: white;
+.modal-category-item {
+    background: #f2f2f7;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+.modal-category-item.selected {
+    background: var(--blue-light);
+    border-color: var(--blue);
+    color: var(--blue);
 }
 .supplier-card {
     background: white;
@@ -143,7 +149,6 @@ input:focus, textarea:focus, select:focus {
 .supplier-card p { margin: 5px 0 0; font-size: 13px; color: #999; }
 .supplier-card .heart { margin-left: auto; font-size: 24px; color: #ccc; cursor: pointer; }
 
-/* Стили для детального экрана поставщика */
 .supplier-detail-header { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow); }
 .supplier-detail-header img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; }
 .supplier-detail-header h3 { margin: 0; font-size: 18px; }
