@@ -185,12 +185,9 @@ if (adminBackBtn) adminBackBtn.addEventListener('click', () => {
 document.getElementById('btn-add-product').onclick = async () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin-product').classList.add('active');
-
-  // Загружаем сразу всё: категории, подкатегории и поставщиков
   await loadSubsAndSuppliers();
 };
 
-// ================== ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ РАЗДЕЛОВ ==================
 async function loadSubsAndSuppliers() {
   const [categories, subcats, suppliers] = await Promise.all([
     fetchData('categories'),
@@ -199,7 +196,7 @@ async function loadSubsAndSuppliers() {
   ]);
 
   const catSelect = document.getElementById('product-category');
-  catSelect.innerHTML = '';
+  catSelect.innerHTML = '<option value="">Выберите раздел</option>';
   categories.forEach(cat => catSelect.innerHTML += `<option value="${cat.id}">${cat.title}</option>`);
 
   const subSelect = document.getElementById('product-subcategory');
@@ -709,7 +706,6 @@ async function performSearch(query) {
 async function loadHomeSections() {
     const allProducts = await fetchData('products?limit=100');
     
-    // Горячие предложения (скидки)
     const hotDeals = allProducts.filter(p => p.old_price && p.old_price > p.price);
     const shuffledHot = hotDeals.sort(() => 0.5 - Math.random()).slice(0, 8);
     const hotScroll = document.getElementById('hot-scroll');
@@ -722,7 +718,6 @@ async function loadHomeSections() {
         </div>
     `).join('');
 
-    // ТОП товары недели (рандомные из всех)
     const shuffledTop = allProducts.sort(() => 0.5 - Math.random()).slice(0, 8);
     const topScroll = document.getElementById('top-scroll');
     topScroll.innerHTML = shuffledTop.map(p => `
@@ -734,7 +729,6 @@ async function loadHomeSections() {
         </div>
     `).join('');
 
-    // Поставщики недели (первые 3)
     const suppliers = await fetchData('suppliers?limit=3');
     const supplierList = document.getElementById('supplier-list');
     supplierList.innerHTML = suppliers.map(s => `
