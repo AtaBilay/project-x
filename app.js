@@ -240,21 +240,72 @@ document.getElementById('save-product-btn').onclick = async () => {
   }
 };
 
+// ================== ЛОГИКА КОНТАКТОВ ПОСТАВЩИКА (НОВАЯ) ==================
+const contactsContainer = document.getElementById('supplier-contacts-container');
+const addContactBtn = document.getElementById('btn-add-contact');
+
+// Функция добавления строки контакта
+function addContactField(type = 'telegram', value = '') {
+    const div = document.createElement('div');
+    div.className = 'contact-row';
+    div.style.display = 'flex';
+    div.style.gap = '10px';
+    div.style.marginBottom = '10px';
+    
+    div.innerHTML = `
+        <select class="contact-type" style="width: 30%; padding: 10px; border-radius: 10px; border: 1px solid #e0e0e0; background: white;">
+            <option value="telegram" ${type === 'telegram' ? 'selected' : ''}>Telegram</option>
+            <option value="whatsapp" ${type === 'whatsapp' ? 'selected' : ''}>WhatsApp</option>
+            <option value="phone" ${type === 'phone' ? 'selected' : ''}>Телефон</option>
+            <option value="vk" ${type === 'vk' ? 'selected' : ''}>VK</option>
+            <option value="website" ${type === 'website' ? 'selected' : ''}>Сайт</option>
+        </select>
+        <input type="text" class="contact-value" placeholder="Ссылка или номер" value="${value}" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #e0e0e0;">
+        <button type="button" class="remove-contact-btn" style="background: #ff3b30; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-weight: bold;">×</button>
+    `;
+    
+    div.querySelector('.remove-contact-btn').addEventListener('click', () => {
+        div.remove();
+    });
+    
+    contactsContainer.appendChild(div);
+}
+
+addContactBtn.addEventListener('click', () => addContactField());
+
 // ================== ДОБАВЛЕНИЕ ПОСТАВЩИКА ==================
 document.getElementById('btn-add-supplier').onclick = () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-admin-supplier').classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-admin-supplier').classList.add('active');
+    
+    // Очищаем старые данные и добавляем одно поле по умолчанию
+    contactsContainer.innerHTML = '';
+    addContactField('telegram', '');
+    document.getElementById('supplier-name').value = '';
+    document.getElementById('supplier-desc').value = '';
+    document.getElementById('supplier-logo').value = '';
 };
 document.getElementById('supplier-back-btn').onclick = () => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-admin').classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-admin').classList.add('active');
 };
 document.getElementById('save-supplier-btn').onclick = async () => {
   const name = document.getElementById('supplier-name').value;
   const desc = document.getElementById('supplier-desc').value;
   const logoFile = document.getElementById('supplier-logo').files[0];
+  
   if (!name.trim()) { alert("⚠️ Ты забыл написать название поставщика! Впиши его в поле «Название»."); return; }
-  if (!logoFile) { alert("⚠️ Ты не загрузил логотип! Нажми на «📸 Загрузить логотип» и выбери картинку."); return; }
+
+  // Собираем контакты
+  const contacts = [];
+  const rows = document.querySelectorAll('.contact-row');
+  rows.forEach(row => {
+      const type = row.querySelector('.contact-type').value;
+      const value = row.querySelector('.contact-value').value.trim();
+      if (value) {
+          contacts.push({ type: type, value: value });
+      }
+  });
 
   let logoUrl = null;
   if (logoFile) {
@@ -268,13 +319,14 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/suppliers`, {
     method: 'POST',
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: name, description: desc, logo_url: logoUrl })
+    body: JSON.stringify({ name: name, description: desc, logo_url: logoUrl, contacts: contacts })
   });
 
   if (response.ok) {
     document.getElementById('supplier-name').value = '';
     document.getElementById('supplier-desc').value = '';
     document.getElementById('supplier-logo').value = '';
+    contactsContainer.innerHTML = ''; // Очищаем контакты
     alert("✅ Поставщик добавлен! Теперь его можно выбрать при добавлении товара.");
   } else {
     alert("❌ Ошибка при добавлении поставщика!");
@@ -367,10 +419,15 @@ document.getElementById('modal-save-btn').onclick = async () => {
   }
 };
 
-// ================== ДЕТАЛИ ТОВАРА ==================
+// ================== ДЕТАЛИ ТОВАРА И КОНТАКТЫ ==================
 const detailScreen = document.getElementById('screen-product-detail');
 const detailContent = document.getElementById('detail-content');
 const detailBackBtn = document.getElementById('detail-back-btn');
+
+// Модалка контактов
+const supplierContactsModal = document.getElementById('supplier-contacts-modal');
+const supplierContactsList = document.getElementById('supplier-contacts-list');
+const closeContactsBtn = document.getElementById('close-contacts-btn');
 
 document.getElementById('back-btn').addEventListener('click', () => {
   nestedScreen.classList.add('hidden');
@@ -381,6 +438,52 @@ detailBackBtn.addEventListener('click', () => {
   nestedScreen.classList.remove('hidden');
 });
 
+closeContactsBtn.addEventListener('click', () => {
+  supplierContactsModal.classList.add('hidden');
+});
+
+// Функция для открытия контактов поставщика
+window.showSupplierContacts = (supplierData) => {
+    const contacts = supplierData.contacts || [];
+    let html = '';
+    
+    if (contacts.length === 0) {
+        html = '<p style="text-align:center; color: #999; margin: 20px 0;">У поставщика пока нет контактов.</p>';
+    } else {
+        contacts.forEach(contact => {
+            let label = '';
+            let icon = '🔗';
+            switch (contact.type) {
+                case 'telegram': label = 'Telegram'; icon = '✈️'; break;
+                case 'whatsapp': label = 'WhatsApp'; icon = '💬'; break;
+                case 'phone': label = 'Телефон'; icon = '📞'; break;
+                case 'vk': label = 'VK'; icon = '📘'; break;
+                case 'website': label = 'Сайт'; icon = '🌐'; break;
+                default: label = contact.type;
+            }
+            
+            let link = contact.value;
+            if (!link.startsWith('http')) {
+                link = 'https://' + link;
+            }
+
+            html += `
+                <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; gap:15px;">
+                    <div style="font-size:24px;">${icon}</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; color:var(--text); font-size:16px;">${label}</div>
+                        <a href="${link}" target="_blank" style="color:var(--blue); text-decoration:underline; font-size:14px; word-break: break-all;">${contact.value}</a>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    supplierContactsList.innerHTML = html;
+    supplierContactsModal.classList.remove('hidden');
+};
+
+// Открытие деталей товара
 window.openProductDetail = async (productId) => {
   detailScreen.classList.remove('hidden');
   nestedScreen.classList.add('hidden');
@@ -396,18 +499,31 @@ window.openProductDetail = async (productId) => {
   const images = await fetchData(`product_images?product_id=eq.${productId}`);
   const mainImg = images.length > 0 ? images[0].image_url : p.image_url;
 
-  let supplierHtml = '';
+  // Получаем поставщика и его контакты
+  let supplierBlock = '';
   if (p.supplier_id) {
     const supplier = await fetchData(`suppliers?id=eq.${p.supplier_id}`);
     if (supplier.length > 0) {
       const s = supplier[0];
-      supplierHtml = `
-        <div class="product-detail-supplier">
-          <img src="${s.logo_url}">
-          <div>
-            <h4>${s.name}</h4>
-            <p>${s.description || ''}</p>
-          </div>
+      
+      supplierBlock = `
+        <div class="product-detail-supplier" style="display:block; padding:15px;">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                <img src="${s.logo_url}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                <div>
+                    <h4 style="margin:0; font-size:16px;">${s.name}</h4>
+                    <p style="margin:5px 0 0; font-size:14px; color:#999;">${s.description || ''}</p>
+                </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button onclick="showSupplierContacts(${JSON.stringify(s).replace(/'/g, "&#39;")})" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
+                    💬 Контакты поставщика
+                </button>
+                <button onclick="alert('Здесь будет список товаров этого поставщика!')" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
+                    🏬 Ассортимент поставщика
+                </button>
+            </div>
         </div>
       `;
     }
@@ -423,11 +539,11 @@ window.openProductDetail = async (productId) => {
       <p style="margin: 0; color: #555; font-size: 14px;">${p.description || 'Описание отсутствует'}</p>
     </div>
 
-    ${supplierHtml}
+    ${supplierBlock}
   `;
 };
 
-// ================== ВЛОЖЕННЫЕ ЭКРАНЫ (СПИСКИ) ==================
+// ================== ВЛОЖЕННЫЕ ЭКРАНЫ ==================
 const nestedScreen = document.getElementById('nested-screen');
 const nestedTitle = document.getElementById('nested-title');
 const nestedContent = document.getElementById('nested-content');
@@ -445,7 +561,6 @@ async function loadCategories() {
   });
 }
 
-// Функция для вывода товаров одного подраздела
 function renderProductGrid(products, allImages) {
   return `<div class="product-grid">
     ${products.map(p => {
@@ -465,17 +580,13 @@ function renderProductGrid(products, allImages) {
   </div>`;
 }
 
-// Открытие категории (теперь с принудительной кнопкой "Все товары")
 async function openCategory(cat) {
   nestedTitle.textContent = cat.title;
   nestedScreen.classList.remove('hidden');
   
   const subcats = await fetchData(`subcategories?category_id=eq.${cat.id}`);
-  
-  // Фильтруем, если вдруг в базе есть подраздел с названием "Все товары" (чтобы не дублировалось)
   const filteredSubcats = subcats.filter(sub => sub.title.toLowerCase() !== 'все товары');
   
-  // Вручную добавляем пункт "Все товары" ПЕРВЫМ
   const allProductsItem = `
     <div class="list-item" style="cursor:pointer;" onclick="openAllProducts('${cat.id}')">
       <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">📦</div>
@@ -490,12 +601,10 @@ async function openCategory(cat) {
   `).join('');
 }
 
-// Открытие "Все товары" (все товары категории)
 window.openAllProducts = async (categoryId) => {
   nestedTitle.textContent = 'Все товары';
   nestedContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
   
-  // Сначала находим все подкатегории
   const subcats = await fetchData(`subcategories?category_id=eq.${categoryId}`);
   const subIds = subcats.map(s => s.id);
   
@@ -513,7 +622,6 @@ window.openAllProducts = async (categoryId) => {
   nestedContent.innerHTML = renderProductGrid(products, allImages);
 };
 
-// Открытие конкретного подраздела
 window.openProducts = async (subId) => {
   nestedTitle.textContent = 'Товары';
   const products = await fetchData(`products?subcategory_id=eq.${subId}`);
