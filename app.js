@@ -399,14 +399,19 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   });
 
   if (response.ok) {
-    document.getElementById('supplier-name').value = '';
-    document.getElementById('supplier-desc').value = '';
-    document.getElementById('supplier-logo').value = '';
-    contactsContainer.innerHTML = ''; 
-    alert("✅ Поставщик добавлен! Теперь его можно выбрать при добавлении товара.");
-  } else {
-    alert("❌ Ошибка при добавлении поставщика!");
-  }
+    modal.classList.add('hidden');
+    document.getElementById('modal-name').value = '';
+    document.getElementById('modal-image').value = '';
+    modalPreviewContainer.innerHTML = '';
+    alert("✅ Раздел успешно создан! Теперь ты можешь добавить в него товары.");
+    
+    // Обновляем главную и форму добавления товара
+    loadCategories();
+    loadHomeSections();
+    loadSubsAndSuppliers(); // <-- ДОБАВИЛ ЭТО, чтобы форма добавления товара сразу видела новый раздел
+} else {
+    alert("❌ Ошибка! Сервер Supabase отказал в создании. Проверь политики RLS.");
+}
 };
 
 // ================== МОДАЛКА КАТЕГОРИЙ ==================
