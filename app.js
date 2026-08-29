@@ -244,7 +244,6 @@ document.getElementById('save-product-btn').onclick = async () => {
 const contactsContainer = document.getElementById('supplier-contacts-container');
 const addContactBtn = document.getElementById('btn-add-contact');
 
-// Делаем функцию глобальной, чтобы она работала даже через onclick в HTML
 window.addContactField = function(type = 'telegram', value = '') {
     if (!contactsContainer) {
         alert("⚠️ Ошибка: не найден блок для контактов. Обнови страницу (Ctrl+F5).");
@@ -276,7 +275,6 @@ window.addContactField = function(type = 'telegram', value = '') {
     contactsContainer.appendChild(div);
 };
 
-// Проверяем, есть ли кнопка, и только потом вешаем обработчик
 if (addContactBtn) {
     addContactBtn.addEventListener('click', function() { window.addContactField(); });
 }
@@ -286,7 +284,6 @@ document.getElementById('btn-add-supplier').onclick = () => {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-admin-supplier').classList.add('active');
     
-    // Очищаем старые данные и добавляем одно поле по умолчанию
     contactsContainer.innerHTML = '';
     addContactField('telegram', '');
     document.getElementById('supplier-name').value = '';
@@ -304,7 +301,6 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   
   if (!name.trim()) { alert("⚠️ Ты забыл написать название поставщика! Впиши его в поле «Название»."); return; }
 
-  // Собираем контакты
   const contacts = [];
   const rows = document.querySelectorAll('.contact-row');
   rows.forEach(row => {
@@ -334,7 +330,7 @@ document.getElementById('save-supplier-btn').onclick = async () => {
     document.getElementById('supplier-name').value = '';
     document.getElementById('supplier-desc').value = '';
     document.getElementById('supplier-logo').value = '';
-    contactsContainer.innerHTML = ''; // Очищаем контакты
+    contactsContainer.innerHTML = ''; 
     alert("✅ Поставщик добавлен! Теперь его можно выбрать при добавлении товара.");
   } else {
     alert("❌ Ошибка при добавлении поставщика!");
@@ -427,7 +423,7 @@ document.getElementById('modal-save-btn').onclick = async () => {
   }
 };
 
-// ================== ДЕТАЛИ ТОВАРА И КОНТАКТЫ ==================
+// ================== ДЕТАЛИ ТОВАРА И КОНТАКТЫ (ИСПРАВЛЕННАЯ ЛОГИКА) ==================
 const detailScreen = document.getElementById('screen-product-detail');
 const detailContent = document.getElementById('detail-content');
 const detailBackBtn = document.getElementById('detail-back-btn');
@@ -436,6 +432,9 @@ const detailBackBtn = document.getElementById('detail-back-btn');
 const supplierContactsModal = document.getElementById('supplier-contacts-modal');
 const supplierContactsList = document.getElementById('supplier-contacts-list');
 const closeContactsBtn = document.getElementById('close-contacts-btn');
+
+// Глобальная переменная для хранения текущего поставщика
+window.currentSupplierData = null;
 
 document.getElementById('back-btn').addEventListener('click', () => {
   nestedScreen.classList.add('hidden');
@@ -450,13 +449,22 @@ closeContactsBtn.addEventListener('click', () => {
   supplierContactsModal.classList.add('hidden');
 });
 
-// Функция для открытия контактов поставщика
-window.showSupplierContacts = (supplierData) => {
-    const contacts = supplierData.contacts || [];
+// Открытие контактов поставщика (без аргументов в onclick!)
+window.showSupplierContacts = () => {
+    const s = window.currentSupplierData;
+    if (!s) {
+        alert("Поставщик не найден");
+        return;
+    }
+    
+    const contacts = s.contacts || [];
     let html = '';
     
+    // Заголовок с именем поставщика как на скриншоте
+    html += `<p style="color: #999; font-size: 14px; margin: 0 0 15px 0;">${s.name}</p>`;
+    
     if (contacts.length === 0) {
-        html = '<p style="text-align:center; color: #999; margin: 20px 0;">У поставщика пока нет контактов.</p>';
+        html += '<p style="text-align:center; color: #999; margin: 20px 0;">У поставщика пока нет контактов.</p>';
     } else {
         contacts.forEach(contact => {
             let label = '';
@@ -476,11 +484,11 @@ window.showSupplierContacts = (supplierData) => {
             }
 
             html += `
-                <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; gap:15px;">
-                    <div style="font-size:24px;">${icon}</div>
-                    <div style="flex:1;">
-                        <div style="font-weight:bold; color:var(--text); font-size:16px;">${label}</div>
-                        <a href="${link}" target="_blank" style="color:var(--blue); text-decoration:underline; font-size:14px; word-break: break-all;">${contact.value}</a>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 24px;">${icon}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; color: var(--text); font-size: 16px;">${label}</div>
+                        <a href="${link}" target="_blank" style="color: var(--blue); text-decoration: underline; font-size: 14px; word-break: break-all;">${contact.value}</a>
                     </div>
                 </div>
             `;
@@ -514,8 +522,8 @@ window.openProductDetail = async (productId) => {
     if (supplier.length > 0) {
       const s = supplier[0];
       
-      // Заменяем одинарные кавычки, чтобы JSON корректно вставился в onclick
-      const supplierJson = JSON.stringify(s).replace(/'/g, "&#39;");
+      // Сохраняем данные поставщика в глобальную переменную
+      window.currentSupplierData = s;
       
       supplierBlock = `
         <div class="product-detail-supplier" style="display:block; padding:15px;">
@@ -528,7 +536,7 @@ window.openProductDetail = async (productId) => {
             </div>
             
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <button onclick="showSupplierContacts(${supplierJson})" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
+                <button onclick="showSupplierContacts()" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
                     💬 Контакты поставщика
                 </button>
                 <button onclick="alert('Здесь будет список товаров этого поставщика!')" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
