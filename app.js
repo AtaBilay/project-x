@@ -381,14 +381,11 @@ detailBackBtn.addEventListener('click', () => {
   nestedScreen.classList.remove('hidden');
 });
 
-// Функция открытия деталей товара
 window.openProductDetail = async (productId) => {
-  // Показываем экран
   detailScreen.classList.remove('hidden');
   nestedScreen.classList.add('hidden');
   detailContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
 
-  // Получаем данные
   const product = await fetchData(`products?id=eq.${productId}`);
   if (product.length === 0) {
     detailContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Товар не найден</p>';
@@ -396,11 +393,9 @@ window.openProductDetail = async (productId) => {
   }
   const p = product[0];
 
-  // Получаем фото
   const images = await fetchData(`product_images?product_id=eq.${productId}`);
   const mainImg = images.length > 0 ? images[0].image_url : p.image_url;
 
-  // Получаем поставщика
   let supplierHtml = '';
   if (p.supplier_id) {
     const supplier = await fetchData(`suppliers?id=eq.${p.supplier_id}`);
@@ -418,7 +413,6 @@ window.openProductDetail = async (productId) => {
     }
   }
 
-  // Формируем HTML
   detailContent.innerHTML = `
     <img class="product-detail-img" src="${mainImg}" onerror="this.src='https://via.placeholder.com/300'">
     <h2 class="product-detail-title">${p.title}</h2>
@@ -431,6 +425,104 @@ window.openProductDetail = async (productId) => {
 
     ${supplierHtml}
   `;
+};
+
+// ================== ВЛОЖЕННЫЕ ЭКРАНЫ (СПИСКИ) ==================
+const nestedScreen = document.getElementById('nested-screen');
+const nestedTitle = document.getElementById('nested-title');
+const nestedContent = document.getElementById('nested-content');
+
+async function loadCategories() {
+  const categories = await fetchData('categories');
+  const grid = document.getElementById('category-grid');
+  grid.innerHTML = '';
+  categories.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
+    card.onclick = () => openCategory(cat);
+    grid.appendChild(card);
+  });
+}
+
+// Функция для вывода товаров одного подраздела
+function renderProductGrid(products, allImages) {
+  return `<div class="product-grid">
+    ${products.map(p => {
+      const imgs = allImages.filter(img => img.product_id === p.id);
+      const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
+      const dots = imgs.length > 1 ? `<div style="display:flex; justify-content:center; gap:4px; margin-top:5px;">${imgs.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'#007aff':'#ccc'}"></div>`).join('')}</div>` : '';
+      
+      return `
+        <div class="product-card" onclick="openProductDetail(${p.id})">
+          <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
+          ${dots}
+          <p class="price">${p.price} ₽</p>
+          <h4>${p.title}</h4>
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+// Открытие категории (теперь с принудительной кнопкой "Все товары")
+async function openCategory(cat) {
+  nestedTitle.textContent = cat.title;
+  nestedScreen.classList.remove('hidden');
+  
+  const subcats = await fetchData(`subcategories?category_id=eq.${cat.id}`);
+  
+  // Фильтруем, если вдруг в базе есть подраздел с названием "Все товары" (чтобы не дублировалось)
+  const filteredSubcats = subcats.filter(sub => sub.title.toLowerCase() !== 'все товары');
+  
+  // Вручную добавляем пункт "Все товары" ПЕРВЫМ
+  const allProductsItem = `
+    <div class="list-item" style="cursor:pointer;" onclick="openAllProducts('${cat.id}')">
+      <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">📦</div>
+      <h4>Все товары</h4>
+    </div>
+  `;
+
+  nestedContent.innerHTML = allProductsItem + filteredSubcats.map(sub => `
+    <div class="list-item" style="cursor:pointer;" onclick="openProducts('${sub.id}')">
+      <img src="${sub.image_url}"><h4>${sub.title}</h4>
+    </div>
+  `).join('');
+}
+
+// Открытие "Все товары" (все товары категории)
+window.openAllProducts = async (categoryId) => {
+  nestedTitle.textContent = 'Все товары';
+  nestedContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
+  
+  // Сначала находим все подкатегории
+  const subcats = await fetchData(`subcategories?category_id=eq.${categoryId}`);
+  const subIds = subcats.map(s => s.id);
+  
+  let products = [];
+  let allImages = [];
+  
+  if (subIds.length > 0) {
+    products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})`);
+    const productIds = products.map(p => p.id);
+    if (productIds.length > 0) {
+      allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
+    }
+  }
+  
+  nestedContent.innerHTML = renderProductGrid(products, allImages);
+};
+
+// Открытие конкретного подраздела
+window.openProducts = async (subId) => {
+  nestedTitle.textContent = 'Товары';
+  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
+  const productIds = products.map(p => p.id);
+  let allImages = [];
+  if (productIds.length > 0) {
+    allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
+  }
+  nestedContent.innerHTML = renderProductGrid(products, allImages);
 };
 
 // ================== FAQ ==================
@@ -453,63 +545,6 @@ faqData.forEach(item => {
   div.querySelector('.faq-question').onclick = () => div.classList.toggle('open');
   faqList.appendChild(div);
 });
-
-// ================== ВЛОЖЕННЫЕ ЭКРАНЫ (СПИСКИ) ==================
-const nestedScreen = document.getElementById('nested-screen');
-const nestedTitle = document.getElementById('nested-title');
-const nestedContent = document.getElementById('nested-content');
-
-async function loadCategories() {
-  const categories = await fetchData('categories');
-  const grid = document.getElementById('category-grid');
-  grid.innerHTML = '';
-  categories.forEach(cat => {
-    const card = document.createElement('div');
-    card.className = 'cat-card';
-    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
-    card.onclick = () => openCategory(cat);
-    grid.appendChild(card);
-  });
-}
-
-async function openCategory(cat) {
-  nestedTitle.textContent = cat.title;
-  nestedScreen.classList.remove('hidden');
-  const subcats = await fetchData(`subcategories?category_id=eq.${cat.id}`);
-  nestedContent.innerHTML = subcats.map(sub => `
-    <div class="list-item" onclick="openProducts('${sub.id}')">
-      <img src="${sub.image_url}"><h4>${sub.title}</h4>
-    </div>
-  `).join('');
-}
-
-window.openProducts = async (subId) => {
-  nestedTitle.textContent = 'Товары';
-  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
-  const productIds = products.map(p => p.id);
-  let allImages = [];
-  if (productIds.length > 0) {
-    allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
-  }
-
-  // Делаем карточки кликабельными!
-  nestedContent.innerHTML = `<div class="product-grid">
-    ${products.map(p => {
-      const imgs = allImages.filter(img => img.product_id === p.id);
-      const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
-      const dots = imgs.length > 1 ? `<div style="display:flex; justify-content:center; gap:4px; margin-top:5px;">${imgs.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'#007aff':'#ccc'}"></div>`).join('')}</div>` : '';
-      
-      return `
-        <div class="product-card" onclick="openProductDetail(${p.id})">
-          <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
-          ${dots}
-          <p class="price">${p.price} ₽</p>
-          <h4>${p.title}</h4>
-        </div>
-      `;
-    }).join('')}
-  </div>`;
-};
 
 // ================== СТАРТ ==================
 loadCategories();
