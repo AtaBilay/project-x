@@ -111,33 +111,45 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-/* КНОПКИ В МОДАЛКАХ */
-.modal-content .admin-big-btn {
+/* НОВЫЕ СТИЛИ ДЛЯ ПОСТАВЩИКОВ */
+.filter-pill {
     background: #f2f2f7;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--gray-text);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-block;
+}
+.filter-pill.active {
+    background: var(--blue);
+    color: white;
+}
+.supplier-card {
+    background: white;
     border-radius: 15px;
     padding: 15px;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    border: none;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow);
     cursor: pointer;
 }
-.modal-content .admin-big-btn:hover {
-    background: #e2e2e7;
-}
+.supplier-card img { width: 60px; height: 60px; border-radius: 10px; margin-right: 15px; object-fit: cover; }
+.supplier-card h4 { margin: 0; font-size: 16px; }
+.supplier-card p { margin: 5px 0 0; font-size: 13px; color: #999; }
+.supplier-card .heart { margin-left: auto; font-size: 24px; color: #ccc; cursor: pointer; }
 
-/* СТИЛИ ДЛЯ ДЕТАЛЕЙ ТОВАРА */
-.product-detail-img { width: 100%; height: 250px; object-fit: cover; border-radius: 15px; margin-bottom: 15px; }
-.product-detail-title { font-size: 24px; font-weight: 800; margin: 0 0 10px 0; }
-.product-detail-price { font-size: 28px; font-weight: 900; color: var(--blue); margin-bottom: 15px; }
-.product-detail-desc { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: var(--shadow); }
-.product-detail-desc h4 { margin: 0 0 10px 0; font-size: 16px; }
-.product-detail-supplier { background: white; border-radius: 15px; padding: 15px; display: flex; align-items: center; box-shadow: var(--shadow); }
-.product-detail-supplier img { width: 50px; height: 50px; border-radius: 10px; margin-right: 15px; }
-.product-detail-supplier h4 { margin: 0; font-size: 16px; }
-.product-detail-supplier p { margin: 5px 0 0; font-size: 14px; color: #999; }
-.product-card { cursor: pointer; transition: transform 0.2s; }
-.product-card:active { transform: scale(0.98); }
+/* Стили для детального экрана поставщика */
+.supplier-detail-header { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow); }
+.supplier-detail-header img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; }
+.supplier-detail-header h3 { margin: 0; font-size: 18px; }
+.supplier-detail-header p { margin: 5px 0 0; font-size: 14px; color: #999; }
+.supplier-detail-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.supplier-detail-buttons button { background: #f2f2f7; border: none; border-radius: 15px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
 
 /* Предпросмотр изображений */
 .preview-wrap { position: relative; display: inline-block; margin-right: 10px; margin-bottom: 10px; }
