@@ -18,7 +18,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .section-card { background: white; margin: 15px; border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .horizontal-scroll { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; }
-.product-mini { flex: 0 0 130px; background: #f9f9f9; border-radius: 10px; padding: 10px; text-align: center; position: relative; }
+.product-mini { flex: 0 0 130px; background: #f9f9f9; border-radius: 10px; padding: 10px; text-align: center; }
 .product-mini img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; } .product-mini h4 { margin: 8px 0 0; font-size: 14px; } .product-mini .price { font-weight: bold; }
 .tab-bar { position: fixed; bottom: 10px; left: 10px; right: 10px; background: white; border-radius: 30px; display: flex; justify-content: space-around; padding: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); z-index: 50; }
 .tab-item { position: relative; font-size: 24px; cursor: pointer; color: #999; }
@@ -111,46 +111,47 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-/* УНИВЕРСАЛЬНЫЙ КЛАСС ДЛЯ ПРЕДПРОСМОТРА (РАБОТАЕТ ВЕЗДЕ!) */
-.preview-wrap {
-    position: relative;
-    display: inline-block;
-    width: 80px;
-    height: 80px;
-    overflow: hidden;
-    border-radius: 10px;
-    margin-right: 10px;
-    margin-bottom: 10px;
-}
-.preview-wrap img {
-    width: 80px !important;
-    height: 80px !important;
-    object-fit: cover;
-    display: block;
-}
-.preview-delete {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: #ff3b30;
-    color: white;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* НОВЫЕ СТИЛИ ДЛЯ ПОСТАВЩИКОВ */
+.filter-pill {
+    background: #f2f2f7;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 600;
     font-size: 14px;
-    font-weight: bold;
+    color: var(--gray-text);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-block;
+}
+.filter-pill.active {
+    background: var(--blue);
+    color: white;
+}
+.supplier-card {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow);
     cursor: pointer;
 }
+.supplier-card img { width: 60px; height: 60px; border-radius: 10px; margin-right: 15px; object-fit: cover; }
+.supplier-card h4 { margin: 0; font-size: 16px; }
+.supplier-card p { margin: 5px 0 0; font-size: 13px; color: #999; }
+.supplier-card .heart { margin-left: auto; font-size: 24px; color: #ccc; cursor: pointer; }
 
-/* Слайдер и прочее */
-.product-gallery { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 15px; margin-bottom: 15px; background: white; }
-.product-gallery img { width: 100%; height: 250px; object-fit: cover; flex-shrink: 0; scroll-snap-align: center; border-radius: 15px; }
-.gallery-dots { display: flex; justify-content: center; gap: 6px; margin-top: -20px; margin-bottom: 15px; position: relative; z-index: 10; }
-.gallery-dots span { width: 8px; height: 8px; border-radius: 50%; background: #ccc; transition: 0.3s; }
-.gallery-dots span.active { background: var(--blue); width: 20px; border-radius: 10px; }
-.fav-heart { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; font-size: 18px; color: #ff3b30; cursor: pointer; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-.fav-heart:active { transform: scale(0.9); }
-.fav-heart.inactive { color: #ccc; }
+/* Стили для детального экрана поставщика */
+.supplier-detail-header { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow); }
+.supplier-detail-header img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; }
+.supplier-detail-header h3 { margin: 0; font-size: 18px; }
+.supplier-detail-header p { margin: 5px 0 0; font-size: 14px; color: #999; }
+.supplier-detail-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.supplier-detail-buttons button { background: #f2f2f7; border: none; border-radius: 15px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
+
+/* Предпросмотр изображений */
+.preview-wrap { position: relative; display: inline-block; margin-right: 10px; margin-bottom: 10px; }
+.preview-wrap img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; display: block; }
+.preview-delete { position: absolute; top: -5px; right: -5px; background: #ff3b30; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
