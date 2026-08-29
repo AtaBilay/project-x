@@ -111,22 +111,24 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-/* ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЛЯ ПРЕВЬЮ */
-#image-preview-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-#image-preview-container .preview-wrap {
+/* УНИВЕРСАЛЬНЫЙ КЛАСС ДЛЯ ПРЕДПРОСМОТРА (РАБОТАЕТ ВЕЗДЕ!) */
+.preview-wrap {
     position: relative;
+    display: inline-block;
     width: 80px;
     height: 80px;
     overflow: hidden;
     border-radius: 10px;
+    margin-right: 10px;
+    margin-bottom: 10px;
 }
-#image-preview-container .preview-wrap img {
+.preview-wrap img {
     width: 80px !important;
     height: 80px !important;
     object-fit: cover;
     display: block;
 }
-#image-preview-container .preview-delete {
+.preview-delete {
     position: absolute;
     top: 2px;
     right: 2px;
