@@ -147,10 +147,20 @@
       </div>
       
       <!-- Блок с фильтрами -->
-      <div id="supplier-filter-bar" style="padding: 0 15px 15px; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap;"></div>
-      
-      <!-- Список поставщиков -->
-      <div id="suppliers-list-container" style="padding: 0 15px;"></div>
+      <div style="padding: 0 15px 15px;">
+        <div class="supplier-filter-card">
+            <div style="font-size: 14px; color: #007aff; font-weight: 600;">Категории</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                <div style="flex: 1;">
+                    <div id="filter-status-text" style="font-size: 20px; font-weight: 700;">Все категории</div>
+                    <div id="filter-subtitle-text" style="font-size: 13px; color: #999;">Показаны все поставщики каталога</div>
+                </div>
+                <button class="admin-big-btn" id="open-filter-modal-btn" style="background: #007aff; color: white; padding: 10px 15px; border-radius: 12px; font-size: 14px; width: auto; margin-bottom: 0;">⚙️ Фильтры</button>
+            </div>
+        </div>
+        <!-- Список поставщиков -->
+        <div id="suppliers-list-container" style="margin-top: 15px;"></div>
+      </div>
   </div>
 
   <!-- НОВЫЙ ЭКРАН: ДЕТАЛЬНАЯ КАРТОЧКА ПОСТАВЩИКА -->
@@ -168,6 +178,17 @@
         <h3 id="contacts-modal-title">Контакты поставщика</h3>
         <div id="supplier-contacts-list" style="margin-bottom: 20px;"></div>
         <button class="admin-big-btn" id="close-contacts-btn" style="background: #ccc;">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА ФИЛЬТРА КАТЕГОРИЙ (ШТОРКА) -->
+  <div id="category-filter-modal" class="modal hidden" style="z-index: 260;">
+    <div class="modal-content" style="padding: 20px; border-radius: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: white; max-height: 80vh; overflow-y: auto;">
+        <div class="drag-handle"></div>
+        <h3 style="margin-top: 0;">Категории</h3>
+        <p style="color: #999; font-size: 14px; margin-bottom: 20px;">Можно выбрать несколько</p>
+        <div id="modal-category-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;"></div>
+        <button class="admin-big-btn" id="close-filter-modal-btn" style="background: #ccc;">Закрыть</button>
     </div>
   </div>
 
