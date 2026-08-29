@@ -7,6 +7,36 @@ const SUPABASE_KEY = "sb_publishable_uMKtRMhQPVglw2Hhg0RImQ_FRFByVIr";
 const tgUser = TG?.initDataUnsafe?.user;
 let currentUserId = tgUser?.id || null;
 
+// ================== ИЗБРАННОЕ (localStorage) ==================
+let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+function saveFavorites() {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    const countEl = document.getElementById('favorites-count');
+    if (countEl) countEl.textContent = favorites.length;
+    renderFavorites();
+}
+
+function isFavorite(id) {
+    return favorites.includes(id);
+}
+
+function toggleFavorite(id) {
+    if (isFavorite(id)) {
+        favorites = favorites.filter(f => f !== id);
+    } else {
+        favorites.push(id);
+    }
+    saveFavorites();
+    // Обновляем все сердечки на странице
+    document.querySelectorAll('.fav-heart').forEach(heart => {
+        if (heart.dataset.id == id) {
+            heart.classList.toggle('inactive', !isFavorite(id));
+            heart.textContent = isFavorite(id) ? '♥' : '♡';
+        }
+    });
+}
+
 async function uploadImage(file, bucket = 'product-images') {
   const path = `${Date.now()}_${file.name}`;
   const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
@@ -34,10 +64,49 @@ tabs.forEach(tab => {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('screen-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'favorites') {
+        renderFavorites();
+    }
   });
 });
 
-// ================== ИЗБРАННОЕ ==================
+// ================== ИЗБРАННОЕ (рендер) ==================
+function renderFavorites() {
+    const container = document.getElementById('favorites-products-container');
+    const empty = document.getElementById('favorites-empty');
+    const countBadge = document.getElementById('favorites-count');
+    countBadge.textContent = favorites.length;
+
+    // Получаем товары из избранного
+    if (favorites.length === 0) {
+        container.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+
+    empty.style.display = 'none';
+    // Загружаем все товары из базы по id
+    const ids = favorites.join(',');
+    fetchData(`products?id=in.(${ids})`).then(products => {
+        if (products.length === 0) {
+            container.innerHTML = '<p style="text-align:center; margin-top:50px; color:#999;">Товары не найдены</p>';
+            return;
+        }
+        let html = '<div class="product-grid">';
+        products.forEach(p => {
+            html += `<div class="product-card" onclick="openProductDetail(${p.id})">
+                <img src="${p.image_url}" style="width:100%; height:180px; object-fit:cover;">
+                <div class="fav-heart active" onclick="event.stopPropagation(); toggleFavorite(${p.id})">♥</div>
+                <p class="price">${p.price} ₽</p>
+                <h4>${p.title}</h4>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    });
+}
+
+// ================== ИЗБРАННОЕ: ПЕРЕКЛЮЧЕНИЕ ТАБОВ ==================
 const favTabs = document.querySelectorAll('.favorites-tab');
 const favSearchBar = document.getElementById('fav-search-bar');
 const favoritesSortBtn = document.getElementById('favorites-sort-btn');
@@ -51,8 +120,12 @@ favTabs.forEach(tab => {
     tab.classList.add('active');
     if (tab.dataset.tab === 'suppliers') {
       favSearchBar.classList.add('suppliers-mode');
+      document.getElementById('favorites-products-container').innerHTML = '';
+      document.getElementById('favorites-empty').innerHTML = '<p>Вы пока не добавили поставщиков в избранное</p>';
+      document.getElementById('favorites-empty').style.display = 'block';
     } else {
       favSearchBar.classList.remove('suppliers-mode');
+      renderFavorites();
     }
   });
 });
@@ -235,6 +308,7 @@ document.getElementById('save-product-btn').onclick = async () => {
 
     alert("✅ Товар успешно добавлен в каталог! Теперь его видят пользователи.");
     loadCategories();
+    loadHomeSections();
   } else {
     alert("❌ Ошибка! Не получилось сохранить товар.");
   }
@@ -418,18 +492,18 @@ document.getElementById('modal-save-btn').onclick = async () => {
     modalPreviewContainer.innerHTML = '';
     alert("✅ Раздел успешно создан! Теперь ты можешь добавить в него товары.");
     loadCategories();
+    loadHomeSections();
   } else {
     alert("❌ Ошибка! Сервер Supabase отказал в создании. Проверь политики RLS.");
   }
 };
 
-// ================== ДЕТАЛИ ТОВАРА И КОНТАКТЫ ==================
+// ================== ДЕТАЛИ ТОВАРА И КОНТАКТЫ (слайдер) ==================
 const detailScreen = document.getElementById('screen-product-detail');
 const detailContent = document.getElementById('detail-content');
 const detailBackBtn = document.getElementById('detail-back-btn');
 
-// Глобальная переменная для хранения текущего поставщика
-window.currentSupplierData = null;
+let currentSupplierData = null;
 
 document.getElementById('back-btn').addEventListener('click', () => {
   nestedScreen.classList.add('hidden');
@@ -441,7 +515,7 @@ detailBackBtn.addEventListener('click', () => {
 });
 
 window.showSupplierContacts = () => {
-    const s = window.currentSupplierData;
+    const s = currentSupplierData;
     if (!s) {
         alert("Поставщик не найден");
         return;
@@ -492,347 +566,30 @@ document.getElementById('close-contacts-btn').addEventListener('click', () => {
     document.getElementById('supplier-contacts-modal').classList.add('hidden');
 });
 
-// ================== ЛОГИКА ПОСТАВЩИКОВ (СПИСОК, ФИЛЬТРЫ, ДЕТАЛИ) ==================
-const screenSuppliers = document.getElementById('screen-suppliers');
-const suppliersBackBtn = document.getElementById('suppliers-back-btn');
-const suppliersListContainer = document.getElementById('suppliers-list-container');
-
-const screenSupplierDetail = document.getElementById('screen-supplier-detail');
-const supplierDetailBackBtn = document.getElementById('supplier-detail-back-btn');
-const supplierDetailContent = document.getElementById('supplier-detail-content');
-
-// Состояние выбранных категорий
-let selectedSupplierCategories = [];
-
-// Элементы модалки фильтров
-const categoryFilterModal = document.getElementById('category-filter-modal');
-const modalCategoryGrid = document.getElementById('modal-category-grid');
-const closeFilterModalBtn = document.getElementById('close-filter-modal-btn');
-const openFilterModalBtn = document.getElementById('open-filter-modal-btn');
-
-// Открыть список поставщиков
-window.openSuppliersScreen = async () => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    screenSuppliers.classList.add('active');
-    
-    // Загружаем поставщиков
-    const suppliers = await fetchData('suppliers');
-    
-    // Обновляем текст в карточке "Все категории"
-    updateFilterStatusText();
-    
-    // Показываем всех поставщиков
-    renderSuppliersList(suppliers);
-};
-
-// Обновление текста "Все категории" / "Выбрано N категорий"
-function updateFilterStatusText() {
-    const statusText = document.getElementById('filter-status-text');
-    const subtitleText = document.getElementById('filter-subtitle-text');
-    
-    if (selectedSupplierCategories.length === 0) {
-        statusText.textContent = 'Все категории';
-        subtitleText.textContent = 'Показаны все поставщики каталога';
-    } else {
-        statusText.textContent = `Выбрано: ${selectedSupplierCategories.length}`;
-        subtitleText.textContent = 'Отфильтрованы поставщики по выбранным категориям';
-    }
-}
-
-// Отрисовка списка поставщиков
-function renderSuppliersList(suppliers) {
-    suppliersListContainer.innerHTML = '';
-    if (suppliers.length === 0) {
-        suppliersListContainer.innerHTML = '<p style="text-align:center; margin-top:50px; color:#999;">Поставщики не найдены</p>';
-        return;
-    }
-    
-    suppliers.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'supplier-card';
-        div.innerHTML = `
-            <img src="${s.logo_url}">
-            <div>
-                <h4>${s.name}</h4>
-                <p>${s.description || ''}</p>
-            </div>
-            <span class="heart">♥</span>
-        `;
-        div.onclick = () => openSupplierDetail(s.id);
-        suppliersListContainer.appendChild(div);
-    });
-}
-
-// Функция фильтрации поставщиков по выбранным категориям
-async function filterSuppliersBySelectedCategories() {
-    if (selectedSupplierCategories.length === 0) {
-        const allSuppliers = await fetchData('suppliers');
-        renderSuppliersList(allSuppliers);
-        return;
-    }
-
-    // Получаем все товары и подкатегории
-    const [allProducts, allSubcategories, allSuppliers] = await Promise.all([fetchData('products'), fetchData('subcategories'), fetchData('suppliers')]);
-    
-    // Создаем карту: supplier_id -> [category_ids]
-    const supplierCategories = {};
-    allSubcategories.forEach(sub => {
-        const productsInSub = allProducts.filter(p => p.subcategory_id === sub.id);
-        productsInSub.forEach(p => {
-            if (!supplierCategories[p.supplier_id]) supplierCategories[p.supplier_id] = [];
-            if (!supplierCategories[p.supplier_id].includes(sub.category_id)) {
-                supplierCategories[p.supplier_id].push(sub.category_id);
-            }
-        });
-    });
-    
-    // Фильтруем (ИЛИ: выбираем поставщиков, которые есть хотя бы в одной из выбранных категорий)
-    const filteredSuppliers = allSuppliers.filter(s => {
-        const cats = supplierCategories[s.id] || [];
-        return cats.some(cat => selectedSupplierCategories.includes(parseInt(cat)));
-    });
-    
-    renderSuppliersList(filteredSuppliers);
-}
-
-// Открыть модалку выбора категорий
-openFilterModalBtn.addEventListener('click', async () => {
-    // Загружаем категории из базы
-    const categories = await fetchData('categories');
-    
-    modalCategoryGrid.innerHTML = '';
-    categories.forEach(cat => {
-        const catBtn = document.createElement('div');
-        catBtn.className = 'modal-category-item';
-        catBtn.textContent = cat.title;
-        
-        if (selectedSupplierCategories.includes(cat.id)) {
-            catBtn.classList.add('selected');
-        }
-        
-        catBtn.onclick = () => {
-            if (selectedSupplierCategories.includes(cat.id)) {
-                selectedSupplierCategories = selectedSupplierCategories.filter(id => id !== cat.id);
-                catBtn.classList.remove('selected');
-            } else {
-                selectedSupplierCategories.push(cat.id);
-                catBtn.classList.add('selected');
-            }
-        };
-        
-        modalCategoryGrid.appendChild(catBtn);
-    });
-    
-    categoryFilterModal.classList.remove('hidden');
-});
-
-closeFilterModalBtn.addEventListener('click', () => {
-    categoryFilterModal.classList.add('hidden');
-    // Применяем фильтр
-    filterSuppliersBySelectedCategories();
-    updateFilterStatusText();
-});
-
-// Открыть детальную страницу поставщика
-window.openSupplierDetail = async (supplierId) => {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    screenSupplierDetail.classList.add('active');
-    
-    supplierDetailContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
-    
-    // Загружаем данные поставщика
-    const supplier = await fetchData(`suppliers?id=eq.${supplierId}`);
-    if (supplier.length > 0) {
-        const s = supplier[0];
-        window.currentSupplierData = s;
-        
-        // Загружаем товары этого поставщика
-        const products = await fetchData(`products?supplier_id=eq.${supplierId}`);
-        
-        // Собираем HTML
-        let productsHtml = '';
-        if (products.length > 0) {
-            const productIds = products.map(p => p.id);
-            const allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
-            
-            productsHtml = `<h3 style="margin-bottom:15px;">Товары поставщика</h3><div class="product-grid">`;
-            products.forEach(p => {
-                const imgs = allImages.filter(img => img.product_id === p.id);
-                const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
-                productsHtml += `
-                    <div class="product-card" onclick="openProductDetail(${p.id})">
-                        <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
-                        <p class="price">${p.price} ₽</p>
-                        <h4>${p.title}</h4>
-                    </div>
-                `;
-            });
-            productsHtml += `</div>`;
-        } else {
-            productsHtml = '<p style="text-align:center; color:#999; margin-top:30px;">У этого поставщика пока нет товаров</p>';
-        }
-        
-        // Формируем полный HTML
-        supplierDetailContent.innerHTML = `
-            <div class="supplier-detail-header">
-                <img src="${s.logo_url}">
-                <div>
-                    <h3>${s.name}</h3>
-                    <p>${s.description || ''}</p>
-                </div>
-            </div>
-            <div class="supplier-detail-buttons">
-                <button onclick="showSupplierContacts()">💬 Контакты поставщика</button>
-                <button onclick="alert('Здесь будет список товаров этого поставщика!')">🏬 Избранное</button>
-            </div>
-            ${productsHtml}
-        `;
-    }
-};
-
-// Кнопки назад
-suppliersBackBtn.addEventListener('click', () => {
-    screenSuppliers.classList.remove('active');
-    document.getElementById('screen-home').classList.add('active');
-});
-supplierDetailBackBtn.addEventListener('click', () => {
-    screenSupplierDetail.classList.remove('active');
-    screenSuppliers.classList.add('active');
-});
-
-// ================== ВЛОЖЕННЫЕ ЭКРАНЫ (СПИСКИ) ==================
-const nestedScreen = document.getElementById('nested-screen');
-const nestedTitle = document.getElementById('nested-title');
-const nestedContent = document.getElementById('nested-content');
-
-async function loadCategories() {
-  const categories = await fetchData('categories');
-  const grid = document.getElementById('category-grid');
-  grid.innerHTML = '';
-
-  // Проверяем, есть ли уже категория "Поставщики"
-  const hasSuppliersCat = categories.some(cat => cat.title.toLowerCase() === 'поставщики');
-
-  // Если нет — добавляем виртуальную карточку в начало
-  if (!hasSuppliersCat) {
-    const virtualCard = document.createElement('div');
-    virtualCard.className = 'cat-card';
-    virtualCard.innerHTML = `<img src="https://via.placeholder.com/150/FFD700/000000?text=Suppliers"><div>Поставщики</div>`;
-    virtualCard.onclick = () => openSuppliersScreen();
-    grid.appendChild(virtualCard);
-  }
-
-  // Рендерим все остальные категории
-  categories.forEach(cat => {
-    const card = document.createElement('div');
-    card.className = 'cat-card';
-
-    if (cat.title.toLowerCase() === 'поставщики') {
-      card.onclick = () => openSuppliersScreen();
-    } else {
-      card.onclick = () => openCategory(cat);
-    }
-
-    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
-    grid.appendChild(card);
-  });
-}
-
-function renderProductGrid(products, allImages) {
-  return `<div class="product-grid">
-    ${products.map(p => {
-      const imgs = allImages.filter(img => img.product_id === p.id);
-      const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
-      const dots = imgs.length > 1 ? `<div style="display:flex; justify-content:center; gap:4px; margin-top:5px;">${imgs.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'#007aff':'#ccc'}"></div>`).join('')}</div>` : '';
-      
-      return `
-        <div class="product-card" onclick="openProductDetail(${p.id})">
-          <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
-          ${dots}
-          <p class="price">${p.price} ₽</p>
-          <h4>${p.title}</h4>
-        </div>
-      `;
-    }).join('')}
-  </div>`;
-}
-
-async function openCategory(cat) {
-  nestedTitle.textContent = cat.title;
-  nestedScreen.classList.remove('hidden');
-  
-  const subcats = await fetchData(`subcategories?category_id=eq.${cat.id}`);
-  const filteredSubcats = subcats.filter(sub => sub.title.toLowerCase() !== 'все товары');
-  
-  const allProductsItem = `
-    <div class="list-item" style="cursor:pointer;" onclick="openAllProducts('${cat.id}')">
-      <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">📦</div>
-      <h4>Все товары</h4>
-    </div>
-  `;
-
-  nestedContent.innerHTML = allProductsItem + filteredSubcats.map(sub => `
-    <div class="list-item" style="cursor:pointer;" onclick="openProducts('${sub.id}')">
-      <img src="${sub.image_url}"><h4>${sub.title}</h4>
-    </div>
-  `).join('');
-}
-
-window.openAllProducts = async (categoryId) => {
-  nestedTitle.textContent = 'Все товары';
-  nestedContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
-  
-  const subcats = await fetchData(`subcategories?category_id=eq.${categoryId}`);
-  const subIds = subcats.map(s => s.id);
-  
-  let products = [];
-  let allImages = [];
-  
-  if (subIds.length > 0) {
-    products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})`);
-    const productIds = products.map(p => p.id);
-    if (productIds.length > 0) {
-      allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
-    }
-  }
-  
-  nestedContent.innerHTML = renderProductGrid(products, allImages);
-};
-
-window.openProducts = async (subId) => {
-  nestedTitle.textContent = 'Товары';
-  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
-  const productIds = products.map(p => p.id);
-  let allImages = [];
-  if (productIds.length > 0) {
-    allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
-  }
-  nestedContent.innerHTML = renderProductGrid(products, allImages);
-};
-
 // Открытие деталей товара
 window.openProductDetail = async (productId) => {
-  const detailScreen = document.getElementById('screen-product-detail');
   detailScreen.classList.remove('hidden');
   nestedScreen.classList.add('hidden');
-  document.getElementById('detail-content').innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
+  detailContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
 
   const product = await fetchData(`products?id=eq.${productId}`);
   if (product.length === 0) {
-    document.getElementById('detail-content').innerHTML = '<p style="text-align:center; margin-top:50px;">Товар не найден</p>';
+    detailContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Товар не найден</p>';
     return;
   }
   const p = product[0];
 
+  // Получаем все фото товара
   const images = await fetchData(`product_images?product_id=eq.${productId}`);
-  const mainImg = images.length > 0 ? images[0].image_url : p.image_url;
+  const galleryImages = images.length > 0 ? images.map(i => i.image_url) : [p.image_url];
 
+  // Получаем поставщика
   let supplierBlock = '';
   if (p.supplier_id) {
     const supplier = await fetchData(`suppliers?id=eq.${p.supplier_id}`);
     if (supplier.length > 0) {
       const s = supplier[0];
-      window.currentSupplierData = s;
+      currentSupplierData = s;
       
       supplierBlock = `
         <div class="product-detail-supplier" style="display:block; padding:15px;">
@@ -857,8 +614,35 @@ window.openProductDetail = async (productId) => {
     }
   }
 
-  document.getElementById('detail-content').innerHTML = `
-    <img class="product-detail-img" src="${mainImg}" onerror="this.src='https://via.placeholder.com/300'">
+  // Слайдер
+  let galleryHtml = '<div class="product-gallery">';
+  galleryImages.forEach(img => {
+    galleryHtml += `<img src="${img}" onerror="this.src='https://via.placeholder.com/300'">`;
+  });
+  galleryHtml += '</div>';
+  if (galleryImages.length > 1) {
+    let dotsHtml = '<div class="gallery-dots">';
+    galleryImages.forEach((_, i) => {
+        dotsHtml += `<span class="${i === 0 ? 'active' : ''}"></span>`;
+    });
+    dotsHtml += '</div>';
+    galleryHtml += dotsHtml;
+  }
+
+  // Обновляем точки при скролле
+  setTimeout(() => {
+    const gallery = document.querySelector('.product-gallery');
+    const dots = document.querySelectorAll('.gallery-dots span');
+    if (gallery && dots.length > 0) {
+        gallery.addEventListener('scroll', () => {
+            const index = Math.round(gallery.scrollLeft / gallery.clientWidth);
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+        });
+    }
+  }, 100);
+
+  detailContent.innerHTML = `
+    ${galleryHtml}
     <h2 class="product-detail-title">${p.title}</h2>
     <div class="product-detail-price">${p.price} ₽ ${p.old_price ? `<span style="text-decoration: line-through; font-size: 18px; color: #999; font-weight: 400;">${p.old_price} ₽</span>` : ''}</div>
     
@@ -871,11 +655,352 @@ window.openProductDetail = async (productId) => {
   `;
 };
 
-document.getElementById('detail-back-btn').addEventListener('click', () => {
-  const detailScreen = document.getElementById('screen-product-detail');
-  detailScreen.classList.add('hidden');
-  nestedScreen.classList.remove('hidden');
+// ================== ПОИСК ==================
+const homeSearchInput = document.getElementById('home-search-input');
+const searchScreen = document.getElementById('screen-search');
+const searchInput = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+const searchBackBtn = document.getElementById('search-back-btn');
+
+homeSearchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    if (query.length > 0) {
+        // Открываем экран поиска
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        searchScreen.classList.add('active');
+        searchInput.value = query;
+        performSearch(query);
+    } else {
+        // Если пусто, закрываем поиск
+        searchScreen.classList.remove('active');
+        document.getElementById('screen-home').classList.add('active');
+    }
 });
+
+searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    if (query.length === 0) {
+        searchResults.innerHTML = '';
+        return;
+    }
+    performSearch(query);
+});
+
+searchBackBtn.addEventListener('click', () => {
+    searchScreen.classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    homeSearchInput.value = '';
+});
+
+async function performSearch(query) {
+    searchResults.innerHTML = '<p style="text-align:center; margin-top:50px; color:#999;">Ищем...</p>';
+    const products = await fetchData(`products?title=ilike.*${encodeURIComponent(query)}*`);
+    if (products.length === 0) {
+        searchResults.innerHTML = '<p style="text-align:center; margin-top:50px; color:#999;">Ничего не найдено</p>';
+        return;
+    }
+    searchResults.innerHTML = `<div class="product-grid">${products.map(p => {
+        const isFav = isFavorite(p.id);
+        return `<div class="product-card" onclick="openProductDetail(${p.id})">
+            <img src="${p.image_url}" style="width:100%; height:180px; object-fit:cover;">
+            <div class="fav-heart ${isFav ? 'active' : 'inactive'}" data-id="${p.id}" onclick="event.stopPropagation(); toggleFavorite(${p.id})">${isFav ? '♥' : '♡'}</div>
+            <p class="price">${p.price} ₽</p>
+            <h4>${p.title}</h4>
+        </div>`;
+    }).join('')}</div>`;
+}
+
+// ================== ЗАГРУЗКА ГЛАВНОЙ (ЛЕНТЫ) ==================
+async function loadHomeSections() {
+    // Горячие предложения (скидки)
+    const hotProducts = await fetchData('products?old_price=not.is.null&limit=20');
+    // Перемешиваем и берем 8
+    const shuffledHot = hotProducts.sort(() => 0.5 - Math.random()).slice(0, 8);
+    const hotScroll = document.getElementById('hot-scroll');
+    hotScroll.innerHTML = shuffledHot.map(p => `
+        <div class="product-mini" onclick="openProductDetail(${p.id})">
+            <div class="fav-heart ${isFavorite(p.id) ? 'active' : 'inactive'}" data-id="${p.id}" onclick="event.stopPropagation(); toggleFavorite(${p.id})">${isFavorite(p.id) ? '♥' : '♡'}</div>
+            <img src="${p.image_url}">
+            <h4>${p.title}</h4>
+            <p class="price">${p.price} ₽ <span style="text-decoration:line-through; color:#999; font-size:12px;">${p.old_price}</span></p>
+        </div>
+    `).join('');
+
+    // ТОП товары недели (рандомные 8 из всех)
+    const topProducts = await fetchData('products?limit=30');
+    const shuffledTop = topProducts.sort(() => 0.5 - Math.random()).slice(0, 8);
+    const topScroll = document.getElementById('top-scroll');
+    topScroll.innerHTML = shuffledTop.map(p => `
+        <div class="product-mini" onclick="openProductDetail(${p.id})">
+            <div class="fav-heart ${isFavorite(p.id) ? 'active' : 'inactive'}" data-id="${p.id}" onclick="event.stopPropagation(); toggleFavorite(${p.id})">${isFavorite(p.id) ? '♥' : '♡'}</div>
+            <img src="${p.image_url}">
+            <h4>${p.title}</h4>
+            <p class="price">${p.price} ₽</p>
+        </div>
+    `).join('');
+
+    // Поставщики недели (первые 3)
+    const suppliers = await fetchData('suppliers?limit=3');
+    const supplierList = document.getElementById('supplier-list');
+    supplierList.innerHTML = suppliers.map(s => `
+        <div class="supplier-item" onclick="openSupplierDetail(${s.id})" style="cursor:pointer;">
+            <img src="${s.logo_url}">
+            <div>
+                <h4>${s.name}</h4>
+                <p>${s.description || ''}</p>
+            </div>
+            <span class="heart" style="margin-left:auto; font-size:24px; color:#ccc;">♡</span>
+        </div>
+    `).join('');
+}
+
+// ================== ЛОГИКА ПОСТАВЩИКОВ (СПИСОК, ФИЛЬТРЫ, ДЕТАЛИ) ==================
+const screenSuppliers = document.getElementById('screen-suppliers');
+const suppliersBackBtn = document.getElementById('suppliers-back-btn');
+const suppliersListContainer = document.getElementById('suppliers-list-container');
+const screenSupplierDetail = document.getElementById('screen-supplier-detail');
+const supplierDetailBackBtn = document.getElementById('supplier-detail-back-btn');
+const supplierDetailContent = document.getElementById('supplier-detail-content');
+
+let selectedSupplierCategories = [];
+
+const categoryFilterModal = document.getElementById('category-filter-modal');
+const modalCategoryGrid = document.getElementById('modal-category-grid');
+const closeFilterModalBtn = document.getElementById('close-filter-modal-btn');
+const openFilterModalBtn = document.getElementById('open-filter-modal-btn');
+
+window.openSuppliersScreen = async () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    screenSuppliers.classList.add('active');
+    const suppliers = await fetchData('suppliers');
+    updateFilterStatusText();
+    renderSuppliersList(suppliers);
+};
+
+function updateFilterStatusText() {
+    const statusText = document.getElementById('filter-status-text');
+    const subtitleText = document.getElementById('filter-subtitle-text');
+    if (selectedSupplierCategories.length === 0) {
+        statusText.textContent = 'Все категории';
+        subtitleText.textContent = 'Показаны все поставщики каталога';
+    } else {
+        statusText.textContent = `Выбрано: ${selectedSupplierCategories.length}`;
+        subtitleText.textContent = 'Отфильтрованы поставщики по выбранным категориям';
+    }
+}
+
+function renderSuppliersList(suppliers) {
+    suppliersListContainer.innerHTML = '';
+    if (suppliers.length === 0) {
+        suppliersListContainer.innerHTML = '<p style="text-align:center; margin-top:50px; color:#999;">Поставщики не найдены</p>';
+        return;
+    }
+    suppliers.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'supplier-card';
+        div.innerHTML = `
+            <img src="${s.logo_url}">
+            <div>
+                <h4>${s.name}</h4>
+                <p>${s.description || ''}</p>
+            </div>
+            <span class="heart">♡</span>
+        `;
+        div.onclick = () => openSupplierDetail(s.id);
+        suppliersListContainer.appendChild(div);
+    });
+}
+
+async function filterSuppliersBySelectedCategories() {
+    if (selectedSupplierCategories.length === 0) {
+        const allSuppliers = await fetchData('suppliers');
+        renderSuppliersList(allSuppliers);
+        return;
+    }
+    const [allProducts, allSubcategories, allSuppliers] = await Promise.all([fetchData('products'), fetchData('subcategories'), fetchData('suppliers')]);
+    const supplierCategories = {};
+    allSubcategories.forEach(sub => {
+        const productsInSub = allProducts.filter(p => p.subcategory_id === sub.id);
+        productsInSub.forEach(p => {
+            if (!supplierCategories[p.supplier_id]) supplierCategories[p.supplier_id] = [];
+            if (!supplierCategories[p.supplier_id].includes(sub.category_id)) supplierCategories[p.supplier_id].push(sub.category_id);
+        });
+    });
+    const filteredSuppliers = allSuppliers.filter(s => {
+        const cats = supplierCategories[s.id] || [];
+        return cats.some(cat => selectedSupplierCategories.includes(parseInt(cat)));
+    });
+    renderSuppliersList(filteredSuppliers);
+}
+
+openFilterModalBtn.addEventListener('click', async () => {
+    const categories = await fetchData('categories');
+    modalCategoryGrid.innerHTML = '';
+    categories.forEach(cat => {
+        const catBtn = document.createElement('div');
+        catBtn.className = 'modal-category-item';
+        catBtn.textContent = cat.title;
+        if (selectedSupplierCategories.includes(cat.id)) catBtn.classList.add('selected');
+        catBtn.onclick = () => {
+            if (selectedSupplierCategories.includes(cat.id)) {
+                selectedSupplierCategories = selectedSupplierCategories.filter(id => id !== cat.id);
+                catBtn.classList.remove('selected');
+            } else {
+                selectedSupplierCategories.push(cat.id);
+                catBtn.classList.add('selected');
+            }
+        };
+        modalCategoryGrid.appendChild(catBtn);
+    });
+    categoryFilterModal.classList.remove('hidden');
+});
+
+closeFilterModalBtn.addEventListener('click', () => {
+    categoryFilterModal.classList.add('hidden');
+    filterSuppliersBySelectedCategories();
+    updateFilterStatusText();
+});
+
+window.openSupplierDetail = async (supplierId) => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    screenSupplierDetail.classList.add('active');
+    supplierDetailContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
+    const supplier = await fetchData(`suppliers?id=eq.${supplierId}`);
+    if (supplier.length > 0) {
+        const s = supplier[0];
+        currentSupplierData = s;
+        const products = await fetchData(`products?supplier_id=eq.${supplierId}`);
+        let productsHtml = '';
+        if (products.length > 0) {
+            const productIds = products.map(p => p.id);
+            const allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
+            productsHtml = `<h3 style="margin-bottom:15px;">Товары поставщика</h3><div class="product-grid">`;
+            products.forEach(p => {
+                const imgs = allImages.filter(img => img.product_id === p.id);
+                const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
+                productsHtml += `
+                    <div class="product-card" onclick="openProductDetail(${p.id})">
+                        <div class="fav-heart ${isFavorite(p.id) ? 'active' : 'inactive'}" data-id="${p.id}" onclick="event.stopPropagation(); toggleFavorite(${p.id})">${isFavorite(p.id) ? '♥' : '♡'}</div>
+                        <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
+                        <p class="price">${p.price} ₽</p>
+                        <h4>${p.title}</h4>
+                    </div>`;
+            });
+            productsHtml += `</div>`;
+        } else {
+            productsHtml = '<p style="text-align:center; color:#999; margin-top:30px;">У этого поставщика пока нет товаров</p>';
+        }
+        supplierDetailContent.innerHTML = `
+            <div class="supplier-detail-header">
+                <img src="${s.logo_url}">
+                <div><h3>${s.name}</h3><p>${s.description || ''}</p></div>
+            </div>
+            <div class="supplier-detail-buttons">
+                <button onclick="showSupplierContacts()">💬 Контакты поставщика</button>
+                <button onclick="alert('Здесь будет список товаров этого поставщика!')">🏬 Избранное</button>
+            </div>
+            ${productsHtml}
+        `;
+    }
+};
+
+suppliersBackBtn.addEventListener('click', () => {
+    screenSuppliers.classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+});
+supplierDetailBackBtn.addEventListener('click', () => {
+    screenSupplierDetail.classList.remove('active');
+    screenSuppliers.classList.add('active');
+});
+
+// ================== КАТЕГОРИИ ==================
+const nestedScreen = document.getElementById('nested-screen');
+const nestedTitle = document.getElementById('nested-title');
+const nestedContent = document.getElementById('nested-content');
+
+async function loadCategories() {
+  const categories = await fetchData('categories');
+  const grid = document.getElementById('category-grid');
+  grid.innerHTML = '';
+  const hasSuppliersCat = categories.some(cat => cat.title.toLowerCase() === 'поставщики');
+  if (!hasSuppliersCat) {
+    const virtualCard = document.createElement('div');
+    virtualCard.className = 'cat-card';
+    virtualCard.innerHTML = `<img src="https://via.placeholder.com/150/FFD700/000000?text=Suppliers"><div>Поставщики</div>`;
+    virtualCard.onclick = () => openSuppliersScreen();
+    grid.appendChild(virtualCard);
+  }
+  categories.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    if (cat.title.toLowerCase() === 'поставщики') {
+      card.onclick = () => openSuppliersScreen();
+    } else {
+      card.onclick = () => openCategory(cat);
+    }
+    card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderProductGrid(products, allImages) {
+  return `<div class="product-grid">
+    ${products.map(p => {
+      const imgs = allImages.filter(img => img.product_id === p.id);
+      const mainImg = imgs.length > 0 ? imgs[0].image_url : p.image_url;
+      const dots = imgs.length > 1 ? `<div style="display:flex; justify-content:center; gap:4px; margin-top:5px;">${imgs.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'#007aff':'#ccc'}"></div>`).join('')}</div>` : '';
+      const isFav = isFavorite(p.id);
+      return `
+        <div class="product-card" onclick="openProductDetail(${p.id})">
+          <img src="${mainImg}" style="width:100%; height:180px; object-fit:cover;">
+          <div class="fav-heart ${isFav ? 'active' : 'inactive'}" data-id="${p.id}" onclick="event.stopPropagation(); toggleFavorite(${p.id})">${isFav ? '♥' : '♡'}</div>
+          ${dots}
+          <p class="price">${p.price} ₽</p>
+          <h4>${p.title}</h4>
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+async function openCategory(cat) {
+  nestedTitle.textContent = cat.title;
+  nestedScreen.classList.remove('hidden');
+  const subcats = await fetchData(`subcategories?category_id=eq.${cat.id}`);
+  const filteredSubcats = subcats.filter(sub => sub.title.toLowerCase() !== 'все товары');
+  const allProductsItem = `
+    <div class="list-item" style="cursor:pointer;" onclick="openAllProducts('${cat.id}')">
+      <div style="background:#eee; width:60px; height:60px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:30px; margin-right:15px;">📦</div>
+      <h4>Все товары</h4>
+    </div>`;
+  nestedContent.innerHTML = allProductsItem + filteredSubcats.map(sub => `
+    <div class="list-item" style="cursor:pointer;" onclick="openProducts('${sub.id}')">
+      <img src="${sub.image_url}"><h4>${sub.title}</h4>
+    </div>`).join('');
+}
+
+window.openAllProducts = async (categoryId) => {
+  nestedTitle.textContent = 'Все товары';
+  nestedContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Загрузка...</p>';
+  const subcats = await fetchData(`subcategories?category_id=eq.${categoryId}`);
+  const subIds = subcats.map(s => s.id);
+  let products = [], allImages = [];
+  if (subIds.length > 0) {
+    products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})`);
+    const productIds = products.map(p => p.id);
+    if (productIds.length > 0) allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
+  }
+  nestedContent.innerHTML = renderProductGrid(products, allImages);
+};
+
+window.openProducts = async (subId) => {
+  nestedTitle.textContent = 'Товары';
+  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
+  const productIds = products.map(p => p.id);
+  let allImages = [];
+  if (productIds.length > 0) allImages = await fetchData(`product_images?product_id=in.(${productIds.join(',')})`);
+  nestedContent.innerHTML = renderProductGrid(products, allImages);
+};
 
 // ================== FAQ ==================
 const faqData = [
@@ -900,3 +1025,5 @@ faqData.forEach(item => {
 
 // ================== СТАРТ ==================
 loadCategories();
+loadHomeSections();
+renderFavorites();
