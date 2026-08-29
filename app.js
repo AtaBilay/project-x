@@ -185,14 +185,31 @@ if (adminBackBtn) adminBackBtn.addEventListener('click', () => {
 document.getElementById('btn-add-product').onclick = async () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin-product').classList.add('active');
-  
-  const categories = await fetchData('categories');
+
+  // Загружаем сразу всё: категории, подкатегории и поставщиков
+  await loadSubsAndSuppliers();
+};
+
+// ================== ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ РАЗДЕЛОВ ==================
+async function loadSubsAndSuppliers() {
+  const [categories, subcats, suppliers] = await Promise.all([
+    fetchData('categories'),
+    fetchData('subcategories'),
+    fetchData('suppliers')
+  ]);
+
   const catSelect = document.getElementById('product-category');
   catSelect.innerHTML = '';
   categories.forEach(cat => catSelect.innerHTML += `<option value="${cat.id}">${cat.title}</option>`);
-  
-  loadSubsAndSuppliers();
-};
+
+  const subSelect = document.getElementById('product-subcategory');
+  subSelect.innerHTML = '<option value="">Выберите тип...</option>';
+  subcats.forEach(sub => subSelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`);
+
+  const supSelect = document.getElementById('product-supplier');
+  supSelect.innerHTML = '<option value="">Выберите поставщика...</option>';
+  suppliers.forEach(sup => supSelect.innerHTML += `<option value="${sup.id}">${sup.name}</option>`);
+}
 
 let selectedFiles = [];
 const imageInput = document.getElementById('product-images');
@@ -225,19 +242,6 @@ function renderImagePreviews() {
         };
         reader.readAsDataURL(file);
     });
-}
-
-async function loadSubsAndSuppliers() {
-  const subcats = await fetchData('subcategories');
-  const suppliers = await fetchData('suppliers');
-  
-  const subSelect = document.getElementById('product-subcategory');
-  const supSelect = document.getElementById('product-supplier');
-  
-  subSelect.innerHTML = '<option value="">Выберите тип...</option>';
-  subcats.forEach(sub => subSelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`);
-  supSelect.innerHTML = '<option value="">Выберите поставщика...</option>';
-  suppliers.forEach(sup => supSelect.innerHTML += `<option value="${sup.id}">${sup.name}</option>`);
 }
 
 document.getElementById('product-back-btn').onclick = () => {
@@ -701,12 +705,11 @@ async function performSearch(query) {
     }).join('')}</div>`;
 }
 
-// ================== ЗАГРУЗКА ГЛАВНОЙ (ЛЕНТЫ) - ИСПРАВЛЕННАЯ ==================
+// ================== ЗАГРУЗКА ГЛАВНОЙ (ЛЕНТЫ) ==================
 async function loadHomeSections() {
-    // Загружаем ВСЕ товары (берём максимум 100, чтобы точно ничего не пропустить)
     const allProducts = await fetchData('products?limit=100');
     
-    // Горячие предложения: фильтруем те, у которых есть старая цена (скидка)
+    // Горячие предложения (скидки)
     const hotDeals = allProducts.filter(p => p.old_price && p.old_price > p.price);
     const shuffledHot = hotDeals.sort(() => 0.5 - Math.random()).slice(0, 8);
     const hotScroll = document.getElementById('hot-scroll');
@@ -719,7 +722,7 @@ async function loadHomeSections() {
         </div>
     `).join('');
 
-    // ТОП товары недели: рандомные из всех
+    // ТОП товары недели (рандомные из всех)
     const shuffledTop = allProducts.sort(() => 0.5 - Math.random()).slice(0, 8);
     const topScroll = document.getElementById('top-scroll');
     topScroll.innerHTML = shuffledTop.map(p => `
