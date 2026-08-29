@@ -22,17 +22,8 @@
 
     <!-- ИЗБРАННОЕ -->
     <div id="screen-favorites" class="screen">
-      <div class="favorites-search-container">
-        <div class="search-bar-favorites" id="fav-search-bar">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Найти в избранном">
-          <button class="sort-btn" id="favorites-sort-btn">⇅</button>
-        </div>
-      </div>
-      <div class="favorites-tabs">
-        <div class="favorites-tab active" data-tab="products"><span class="tab-text">Товары</span> <span class="tab-badge">0</span></div>
-        <div class="favorites-tab" data-tab="suppliers"><span class="tab-text">Поставщики</span> <span class="tab-badge">0</span></div>
-      </div>
+      <div class="favorites-search-container"><div class="search-bar-favorites" id="fav-search-bar"><span class="search-icon">🔍</span><input type="text" placeholder="Найти в избранном"><button class="sort-btn" id="favorites-sort-btn">⇅</button></div></div>
+      <div class="favorites-tabs"><div class="favorites-tab active" data-tab="products"><span class="tab-text">Товары</span> <span class="tab-badge">0</span></div><div class="favorites-tab" data-tab="suppliers"><span class="tab-text">Поставщики</span> <span class="tab-badge">0</span></div></div>
       <div class="empty-state"><p>В избранном <b>пока</b> пусто</p></div>
     </div>
 
@@ -51,27 +42,12 @@
         <div class="currency-info"><h4>Валюта товаров</h4><p>Цены каталога</p></div>
         <div class="rate">1 ₽ = <span id="kzt-rate">5,94</span> ₸</div>
       </div>
-      
       <div class="grouped-card">
-        <div class="grouped-item" id="open-settings-btn" style="cursor:pointer;">
-          <div class="icon-circle">⚙️</div>
-          <div><h4>Настройки</h4><p>Подписка и управление доступом</p></div>
-          <span class="arrow">›</span>
-        </div>
+        <div class="grouped-item" id="open-settings-btn" style="cursor:pointer;"><div class="icon-circle">⚙️</div><div><h4>Настройки</h4><p>Подписка и управление доступом</p></div><span class="arrow">›</span></div>
         <div class="divider"></div>
-        <div class="grouped-item" id="open-faq-btn" style="cursor:pointer;">
-          <div class="icon-circle">❓</div>
-          <div><h4>FAQ</h4><p>Ответы на частые вопросы</p></div>
-          <span class="arrow">›</span>
-        </div>
+        <div class="grouped-item" id="open-faq-btn" style="cursor:pointer;"><div class="icon-circle">❓</div><div><h4>FAQ</h4><p>Ответы на частые вопросы</p></div><span class="arrow">›</span></div>
       </div>
-      <div class="grouped-card" id="admin-panel-btn" style="display:block; cursor:pointer; margin-top: 15px;">
-        <div class="grouped-item">
-          <div class="icon-circle" style="background:#ffe0e0; color:red;">⚙️</div>
-          <div><h4>Админ-панель</h4><p>Добавление товаров и категорий</p></div>
-          <span class="arrow">›</span>
-        </div>
-      </div>
+      <div class="grouped-card" id="admin-panel-btn" style="display:block; cursor:pointer; margin-top: 15px;"><div class="grouped-item"><div class="icon-circle" style="background:#ffe0e0; color:red;">⚙️</div><div><h4>Админ-панель</h4><p>Добавление товаров и категорий</p></div><span class="arrow">›</span></div></div>
     </div>
 
     <!-- НАСТРОЙКИ -->
@@ -123,16 +99,13 @@
       <div style="padding: 15px;">
         <input type="text" id="supplier-name" placeholder="Название" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
         <input type="text" id="supplier-desc" placeholder="Описание (например, ТЦ Садовод)" style="width:100%; padding:12px; border-radius:10px; margin-bottom:10px;">
-        
         <label style="font-weight:bold; margin-bottom:5px; display:block;">Логотип</label>
         <label for="supplier-logo" class="upload-area"><input type="file" id="supplier-logo" accept="image/*"><span>📸 Загрузить логотип</span></label>
-        
         <div style="margin-top: 15px; margin-bottom: 10px;">
             <label style="font-weight:bold; margin-bottom:5px; display:block;">Контакты (Telegram, WhatsApp, Телефон и т.д.)</label>
             <div id="supplier-contacts-container"></div>
             <button type="button" class="admin-big-btn" id="btn-add-contact" style="background: #e8f1ff; color: #007aff;" onclick="addContactField()">➕ Добавить контакт</button>
         </div>
-
         <button class="admin-big-btn" id="save-supplier-btn" style="background: #007aff;">💾 Сохранить поставщика</button>
       </div>
     </div>
@@ -164,6 +137,29 @@
       <button class="sort-btn">❤️</button>
     </header>
     <div id="detail-content" style="padding: 15px;"></div>
+  </div>
+
+  <!-- НОВЫЙ ЭКРАН: СПИСОК ПОСТАВЩИКОВ -->
+  <div id="screen-suppliers" class="screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 120; overflow-y: auto;">
+      <div class="settings-header">
+          <button class="back-btn" id="suppliers-back-btn">←</button>
+          <h2>Поставщики</h2>
+      </div>
+      
+      <!-- Блок с фильтрами -->
+      <div id="supplier-filter-bar" style="padding: 0 15px 15px; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap;"></div>
+      
+      <!-- Список поставщиков -->
+      <div id="suppliers-list-container" style="padding: 0 15px;"></div>
+  </div>
+
+  <!-- НОВЫЙ ЭКРАН: ДЕТАЛЬНАЯ КАРТОЧКА ПОСТАВЩИКА -->
+  <div id="screen-supplier-detail" class="screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 130; overflow-y: auto;">
+      <div class="settings-header">
+          <button class="back-btn" id="supplier-detail-back-btn">←</button>
+          <h2>Назад</h2>
+      </div>
+      <div id="supplier-detail-content" style="padding: 15px;"></div>
   </div>
 
   <!-- МОДАЛКА КОНТАКТОВ ПОСТАВЩИКА -->
