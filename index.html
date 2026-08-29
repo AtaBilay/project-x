@@ -117,7 +117,7 @@
       </div>
     </div>
 
-    <!-- НОВЫЙ ПОСТАВЩИК (ОБНОВЛЕНО) -->
+    <!-- НОВЫЙ ПОСТАВЩИК -->
     <div id="screen-admin-supplier" class="screen">
       <div class="settings-header"><button class="back-btn" id="supplier-back-btn">←</button><h2>Новый поставщик</h2></div>
       <div style="padding: 15px;">
@@ -127,11 +127,10 @@
         <label style="font-weight:bold; margin-bottom:5px; display:block;">Логотип</label>
         <label for="supplier-logo" class="upload-area"><input type="file" id="supplier-logo" accept="image/*"><span>📸 Загрузить логотип</span></label>
         
-        <!-- НОВЫЙ БЛОК КОНТАКТОВ -->
         <div style="margin-top: 15px; margin-bottom: 10px;">
             <label style="font-weight:bold; margin-bottom:5px; display:block;">Контакты (Telegram, WhatsApp, Телефон и т.д.)</label>
             <div id="supplier-contacts-container"></div>
-            <button type="button" class="admin-big-btn" id="btn-add-contact" style="background: #e8f1ff; color: #007aff;">➕ Добавить контакт</button>
+            <button type="button" class="admin-big-btn" id="btn-add-contact" style="background: #e8f1ff; color: #007aff;" onclick="addContactField()">➕ Добавить контакт</button>
         </div>
 
         <button class="admin-big-btn" id="save-supplier-btn" style="background: #007aff;">💾 Сохранить поставщика</button>
@@ -167,7 +166,7 @@
     <div id="detail-content" style="padding: 15px;"></div>
   </div>
 
-  <!-- МОДАЛКА КОНТАКТОВ ПОСТАВЩИКА (НОВАЯ) -->
+  <!-- МОДАЛКА КОНТАКТОВ ПОСТАВЩИКА -->
   <div id="supplier-contacts-modal" class="modal hidden" style="z-index: 250;">
     <div class="modal-content" style="padding: 20px; border-radius: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: white; max-height: 80vh; overflow-y: auto;">
         <h3 id="contacts-modal-title">Контакты поставщика</h3>
