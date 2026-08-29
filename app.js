@@ -662,17 +662,30 @@ async function loadCategories() {
   const categories = await fetchData('categories');
   const grid = document.getElementById('category-grid');
   grid.innerHTML = '';
+
+  // Проверяем, есть ли уже категория "Поставщики"
+  const hasSuppliersCat = categories.some(cat => cat.title.toLowerCase() === 'поставщики');
+
+  // Если нет — добавляем виртуальную карточку в начало
+  if (!hasSuppliersCat) {
+    const virtualCard = document.createElement('div');
+    virtualCard.className = 'cat-card';
+    virtualCard.innerHTML = `<img src="https://via.placeholder.com/150/FFD700/000000?text=Suppliers"><div>Поставщики</div>`;
+    virtualCard.onclick = () => openSuppliersScreen();
+    grid.appendChild(virtualCard);
+  }
+
+  // Рендерим все остальные категории
   categories.forEach(cat => {
     const card = document.createElement('div');
     card.className = 'cat-card';
-    
-    // Если это категория "Поставщики", открываем список поставщиков
+
     if (cat.title.toLowerCase() === 'поставщики') {
-        card.onclick = () => openSuppliersScreen();
+      card.onclick = () => openSuppliersScreen();
     } else {
-        card.onclick = () => openCategory(cat);
+      card.onclick = () => openCategory(cat);
     }
-    
+
     card.innerHTML = `<img src="${cat.image_url}"><div>${cat.title}</div>`;
     grid.appendChild(card);
   });
