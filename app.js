@@ -240,12 +240,17 @@ document.getElementById('save-product-btn').onclick = async () => {
   }
 };
 
-// ================== ЛОГИКА КОНТАКТОВ ПОСТАВЩИКА (НОВАЯ) ==================
+// ================== ЛОГИКА КОНТАКТОВ ПОСТАВЩИКА ==================
 const contactsContainer = document.getElementById('supplier-contacts-container');
 const addContactBtn = document.getElementById('btn-add-contact');
 
-// Функция добавления строки контакта
-function addContactField(type = 'telegram', value = '') {
+// Делаем функцию глобальной, чтобы она работала даже через onclick в HTML
+window.addContactField = function(type = 'telegram', value = '') {
+    if (!contactsContainer) {
+        alert("⚠️ Ошибка: не найден блок для контактов. Обнови страницу (Ctrl+F5).");
+        return;
+    }
+    
     const div = document.createElement('div');
     div.className = 'contact-row';
     div.style.display = 'flex';
@@ -269,9 +274,12 @@ function addContactField(type = 'telegram', value = '') {
     });
     
     contactsContainer.appendChild(div);
-}
+};
 
-addContactBtn.addEventListener('click', () => addContactField());
+// Проверяем, есть ли кнопка, и только потом вешаем обработчик
+if (addContactBtn) {
+    addContactBtn.addEventListener('click', function() { window.addContactField(); });
+}
 
 // ================== ДОБАВЛЕНИЕ ПОСТАВЩИКА ==================
 document.getElementById('btn-add-supplier').onclick = () => {
@@ -506,6 +514,9 @@ window.openProductDetail = async (productId) => {
     if (supplier.length > 0) {
       const s = supplier[0];
       
+      // Заменяем одинарные кавычки, чтобы JSON корректно вставился в onclick
+      const supplierJson = JSON.stringify(s).replace(/'/g, "&#39;");
+      
       supplierBlock = `
         <div class="product-detail-supplier" style="display:block; padding:15px;">
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
@@ -517,7 +528,7 @@ window.openProductDetail = async (productId) => {
             </div>
             
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <button onclick="showSupplierContacts(${JSON.stringify(s).replace(/'/g, "&#39;")})" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
+                <button onclick="showSupplierContacts(${supplierJson})" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
                     💬 Контакты поставщика
                 </button>
                 <button onclick="alert('Здесь будет список товаров этого поставщика!')" style="background:#f2f2f7; border:none; border-radius:15px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; text-align:center;">
