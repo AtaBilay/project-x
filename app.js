@@ -20,27 +20,77 @@ function saveFavs(){
   localStorage.setItem('fav_suppliers', JSON.stringify(favSuppliers));
 }
 
+// ============ ERROR BANNER ============
+function showErrorBanner(msg){
+  let el = document.getElementById('__supabase_err');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '__supabase_err';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+}
+
 // ============ SUPABASE ============
 async function uploadImage(file, bucket = 'product-images'){
   const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
   try {
     const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
       method: 'POST',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      headers: { apikey: SUPABASE_KEY },
       body: file
     });
     if (r.ok) return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
-    alert(`⚠️ Ошибка загрузки в '${bucket}'`);
+    const txt = await r.text();
+    showErrorBanner(`Upload [${r.status}] ${bucket}: ${txt.slice(0,150)}`);
     return null;
-  } catch(e){ alert('Ошибка сети'); return null; }
+  } catch(e){
+    showErrorBanner('Upload сеть: ' + e.message);
+    return null;
+  }
 }
+
 async function fetchData(endpoint){
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Accept': 'application/json'
+      }
     });
-    return await r.json();
-  } catch(e){ console.error(e); return []; }
+    if (!r.ok) {
+      const txt = await r.text();
+      showErrorBanner(`⚠️ Supabase [${r.status}] /${endpoint.split('?')[0]} → ${txt.slice(0,180)}`);
+      return [];
+    }
+    const data = await r.json();
+    if (!Array.isArray(data)) {
+      showErrorBanner('⚠️ Ответ не массив: ' + JSON.stringify(data).slice(0,180));
+      return [];
+    }
+    return data;
+  } catch(e){
+    showErrorBanner('⚠️ Сеть: ' + e.message);
+    return [];
+  }
+}
+
+async function sbInsert(table, body){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    showErrorBanner(`⚠️ Insert ${table} [${r.status}]: ${txt.slice(0,180)}`);
+    return null;
+  }
+  return await r.json();
 }
 
 // ============ HEART SVG ============
@@ -119,7 +169,6 @@ function renderProductCard(p, imgs){
 }
 window.renderProductCard = renderProductCard;
 
-// Slider dots (event delegation)
 document.addEventListener('scroll', (e) => {
   const t = e.target;
   if (t && t.classList && t.classList.contains('ph-track')) {
@@ -137,7 +186,7 @@ async function loadHome(){
   ]);
   const chiprow = document.getElementById('chiprow');
   chiprow.innerHTML = '<button class="chip active" data-cat="">Все</button>' +
-    cats.map(c => `<button class="chip" data-cat="${c.id}">${c.title}</button>`).join('');
+    (cats.length ? cats.map(c => `<button class="chip" data-cat="${c.id}">${c.title}</button>`).join('') : '');
   chiprow.querySelectorAll('.chip').forEach(ch => {
     ch.onclick = () => {
       chiprow.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -590,20 +639,15 @@ document.getElementById('save-product-btn').onclick = async () => {
     if (!u) { alert('Ошибка загрузки фото'); return; }
     urls.push(u);
   }
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
-    method: 'POST',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify({ subcategory_id: subId, supplier_id: supId, title, price, old_price: oldPrice || null, discount, description: desc, image_url: urls[0], is_hot: discount ? true : false })
+  const data = await sbInsert('products', {
+    subcategory_id: subId, supplier_id: supId, title, price,
+    old_price: oldPrice || null, discount, description: desc,
+    image_url: urls[0], is_hot: discount ? true : false
   });
-  if (!resp.ok) { alert('Ошибка сохранения'); return; }
-  const data = await resp.json();
+  if (!data || !data[0]) { alert('Ошибка сохранения'); return; }
   const pid = data[0].id;
   for (const url of urls) {
-    await fetch(`${SUPABASE_URL}/rest/v1/product_images`, {
-      method: 'POST',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: pid, image_url: url })
-    });
+    await sbInsert('product_images', { product_id: pid, image_url: url });
   }
   ['product-title', 'product-price', 'product-old-price', 'product-discount', 'product-desc'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('product-images').value = '';
@@ -664,12 +708,8 @@ document.getElementById('save-supplier-btn').onclick = async () => {
     logoUrl = await uploadImage(logoFile, 'supplier-images');
     if (!logoUrl) { alert('Ошибка загрузки логотипа'); return; }
   }
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/suppliers`, {
-    method: 'POST',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description: desc, logo_url: logoUrl, contacts })
-  });
-  if (resp.ok) {
+  const data = await sbInsert('suppliers', { name, description: desc, logo_url: logoUrl, contacts });
+  if (data) {
     document.getElementById('supplier-name').value = '';
     document.getElementById('supplier-desc').value = '';
     document.getElementById('supplier-logo').value = '';
@@ -721,12 +761,8 @@ document.getElementById('modal-save-btn').onclick = async () => {
   const body = modalType === 'subcategory'
     ? { title: name, image_url: url, category_id: (await fetchData('categories'))[0]?.id || 1 }
     : { title: name, image_url: url };
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (resp.ok) {
+  const data = await sbInsert(table, body);
+  if (data) {
     modal.classList.add('hidden');
     alert('✅ Создано!');
   } else {
