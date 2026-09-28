@@ -25,7 +25,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
 .icnbtn{width:38px;height:38px;border-radius:50%;background:var(--secbg);display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;border:none;cursor:pointer;}
 .searchrow{display:flex;gap:8px;margin-bottom:12px;}
 .search{flex:1;background:var(--secbg);border-radius:var(--r-btn);height:46px;display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--hint);font-size:15px;}
-.search input{border:none;background:transparent;outline:none;flex:1;font-size:15px;color:var(--text);}
+.search input{
+  border:none !important;
+  background:transparent !important;
+  outline:none;
+  flex:1;
+  font-size:15px;
+  color:var(--text);
+  padding:0 !important;
+  margin:0 !important;
+  width:auto !important;
+  height:auto !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  transition:none !important;
+}
 .sqbtn{width:46px;height:46px;border-radius:var(--r-btn);background:var(--btn);border:none;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;cursor:pointer;}
 
 /* Chips */
@@ -149,10 +163,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
 .modal-content{background:#fff;border-radius:var(--r-modal);padding:22px;width:100%;max-width:400px;}
 
 /* Inputs */
-.input-field, input[type=text], input[type=number], textarea, select{
+.input-field, textarea, select,
+input[type=text], input[type=number]{
   width:100%;padding:13px 14px;border-radius:var(--r-btn);border:1px solid var(--sep);background:var(--card);color:var(--text);font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:10px;font-family:inherit;
 }
-input:focus, textarea:focus, select:focus{border-color:var(--btn);box-shadow:0 0 0 3px rgba(43,127,224,.1);}
+.input-field:focus, textarea:focus, select:focus,
+input[type=text]:focus, input[type=number]:focus{border-color:var(--btn);box-shadow:0 0 0 3px rgba(43,127,224,.1);}
 
 /* Upload */
 .upload-area{display:block;background:var(--secbg);border-radius:var(--r-btn);padding:16px;text-align:center;cursor:pointer;margin-bottom:14px;border:2px dashed var(--sep);transition:.2s;}
@@ -194,3 +210,6 @@ input:focus, textarea:focus, select:focus{border-color:var(--btn);box-shadow:0 0
 .remove-contact-btn{background:#ff3b30;color:#fff;border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-weight:bold;font-size:16px;flex-shrink:0;}
 
 .foot{text-align:center;font-size:11px;color:var(--hint);padding:10px 0 4px;}
+
+/* Error banner */
+#__supabase_err{position:fixed;top:0;left:0;right:0;background:#ff3b30;color:#fff;padding:8px 12px;font-size:11px;z-index:99999;font-family:monospace;word-break:break-all;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,.3);}
