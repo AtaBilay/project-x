@@ -30,12 +30,11 @@ function formatPrice(price){
 window.formatPrice = formatPrice;
 
 function updateCurrToggleUI(){
-  document.querySelectorAll('#curr-toggle button').forEach(b => {
-    const isActive = b.dataset.cur === currentCurrency;
-    b.classList.toggle('active', isActive);
-    b.style.background = isActive ? '#ffffff' : 'transparent';
-    b.style.color = isActive ? '#0f1116' : '#8b8d97';
-    b.style.boxShadow = isActive ? '0 1px 3px rgba(0,0,0,.08)' : 'none';
+  const toggle = document.getElementById('curr-toggle');
+  if (!toggle) return;
+  toggle.setAttribute('data-active', currentCurrency);
+  toggle.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.cur === currentCurrency);
   });
 }
 window.updateCurrToggleUI = updateCurrToggleUI;
@@ -273,6 +272,24 @@ async function loadHome(){
       filterHomeByCategory(ch.dataset.cat);
     };
   });
+
+  // Featured categories (2 large tiles)
+  const featuredWrap = document.getElementById('featured-cats');
+  if (featuredWrap) {
+    const featured = cats.slice(0, 2);
+    if (featured.length) {
+      featuredWrap.innerHTML = featured.map(c => `
+        <div class="featured-cat" onclick="openCategoryOverlay(${c.id}, '${(c.title || '').replace(/'/g, "\\'")}')">
+          ${c.image_url ? `<img src="${c.image_url}" alt="">` : ''}
+          <div class="fc-overlay"></div>
+          <div class="fc-title">${c.title}</div>
+        </div>
+      `).join('');
+      featuredWrap.style.display = '';
+    } else {
+      featuredWrap.style.display = 'none';
+    }
+  }
 
   const hot = products.filter(p => p.is_hot).slice(0, 6);
   const top = products.slice(0, 6);
