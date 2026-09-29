@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Просто выгодно</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -42,15 +42,16 @@
         </div>
       </div>
       <div id="home-block">
-        <div class="card">
-          <span class="pill">Важно</span>
-          <h3>Каталог проверенных поставщиков</h3>
-          <p>Все заказы, оплата и доставка происходят напрямую между вами и поставщиком. Мы никогда не пишем первыми.</p>
-        </div>
+        <div class="grid2" id="featured-cats"></div>
         <div class="sec-head"><div class="sec-title">🔥 Горячие предложения</div></div>
         <div class="grid2" id="hot-grid"></div>
         <div class="sec-head"><div class="sec-title">⭐ ТОП товары недели</div></div>
         <div class="grid2" id="top-grid"></div>
+        <div class="card" style="margin-top:6px;">
+          <span class="pill">Важно</span>
+          <h3>Каталог проверенных поставщиков</h3>
+          <p>Все заказы, оплата и доставка происходят напрямую между вами и поставщиком. Мы никогда не пишем первыми.</p>
+        </div>
         <div class="foot">Просто выгодно · v1.0</div>
       </div>
     </div>
@@ -151,9 +152,10 @@
       </div>
       <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
         <div><b style="font-size:14px;">Валюта товаров</b><div style="font-size:12px;color:var(--hint);">Цены в каталоге</div></div>
-        <div id="curr-toggle" style="display:flex;background:#f2f2f7;border-radius:10px;padding:3px;gap:2px;">
-          <button data-cur="RUB" onclick="setCurrency('RUB')" style="border:none;background:transparent;font-size:13px;font-weight:700;padding:8px 12px;border-radius:8px;color:#8b8d97;cursor:pointer;font-family:inherit;">₽ RUB</button>
-          <button data-cur="KZT" onclick="setCurrency('KZT')" style="border:none;background:transparent;font-size:13px;font-weight:700;padding:8px 12px;border-radius:8px;color:#8b8d97;cursor:pointer;font-family:inherit;">₸ KZT</button>
+        <div class="curr-toggle" id="curr-toggle" data-active="RUB">
+          <div class="curr-indicator"></div>
+          <button data-cur="RUB" onclick="setCurrency('RUB')" class="active">₽ RUB</button>
+          <button data-cur="KZT" onclick="setCurrency('KZT')">₸ KZT</button>
         </div>
       </div>
       <div class="card" style="padding:0;">
@@ -340,6 +342,6 @@
   </div>
 </div>
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
