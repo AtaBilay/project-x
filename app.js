@@ -429,6 +429,7 @@ async function openProductDetail(productId){
     <div class="notice" style="margin-top:14px;">🛡️ Заказ, оплата и доставка — напрямую у поставщика.</div>
   `;
   const track = document.getElementById('pd-track');
+  track.style.scrollBehavior = 'smooth';
   track.addEventListener('scroll', () => {
     const slideWidth = track.scrollWidth / track.children.length;
     const idx = Math.round(track.scrollLeft / slideWidth);
