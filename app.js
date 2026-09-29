@@ -13,6 +13,60 @@ let currentSupplierData = null;
 let currentDetailProductId = null;
 let selectedFiles = [];
 
+// ============ CURRENCY ============
+const KZT_RATE = 5.94;
+let currentCurrency = localStorage.getItem('currency') || 'RUB';
+
+function formatPrice(price){
+  if (price == null || price === '') return '';
+  const num = parseFloat(price);
+  if (isNaN(num)) return price + ' ₽';
+  if (currentCurrency === 'KZT') {
+    const kzt = Math.round(num * KZT_RATE);
+    return kzt.toLocaleString('ru-RU').replace(/\s/g, ' ') + ' ₸';
+  }
+  return num.toLocaleString('ru-RU').replace(/\s/g, ' ') + ' ₽';
+}
+window.formatPrice = formatPrice;
+
+function setCurrency(cur){
+  currentCurrency = cur;
+  localStorage.setItem('currency', cur);
+  document.querySelectorAll('#curr-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.cur === cur);
+  });
+  rerenderAll();
+}
+window.setCurrency = setCurrency;
+
+function updateCurrToggleUI(){
+  document.querySelectorAll('#curr-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.cur === currentCurrency);
+  });
+}
+
+function rerenderAll(){
+  const activeScreen = document.querySelector('.screen.active');
+  if (activeScreen) {
+    if (activeScreen.id === 'screen-home') loadHome();
+    else if (activeScreen.id === 'screen-catalog') loadCatalogScreen();
+    else if (activeScreen.id === 'screen-favorites') renderFavorites();
+    else if (activeScreen.id === 'screen-profile') updateCurrToggleUI();
+  }
+  const pdOverlay = document.getElementById('screen-product-detail');
+  if (pdOverlay.classList.contains('show') && currentDetailProductId) {
+    openProductDetail(currentDetailProductId);
+  }
+  const nested = document.getElementById('nested-screen');
+  if (nested.classList.contains('show')) {
+    const st = nested.dataset.state;
+    if (st === 'products') openProductsInSub(nested.dataset.subId);
+    else if (st === 'all') openAllProductsInCategory(nested.dataset.catId);
+    else if (st === 'categories') openCategoryOverlay(nested.dataset.catId, document.getElementById('nested-title').textContent);
+  }
+}
+window.rerenderAll = rerenderAll;
+
 let favProducts = JSON.parse(localStorage.getItem('fav_products') || '[]');
 let favSuppliers = JSON.parse(localStorage.getItem('fav_suppliers') || '[]');
 function saveFavs(){
@@ -162,7 +216,7 @@ function renderProductCard(p, imgs){
     </div>
     ${dots}
     <div class="pinfo">
-      <div class="price">${p.price} ₽${p.old_price ? ` <span style="text-decoration:line-through;font-size:12px;color:var(--hint);font-weight:400;">${p.old_price} ₽</span>` : ''}</div>
+      <div class="price">${formatPrice(p.price)}${p.old_price ? ` <span style="text-decoration:line-through;font-size:12px;color:var(--hint);font-weight:400;">${formatPrice(p.old_price)}</span>` : ''}</div>
       <div class="pname">${p.title}</div>
     </div>
   </div>`;
@@ -188,7 +242,6 @@ document.addEventListener('click', function(e){
   const idx = parseInt(dot.dataset.idx, 10);
   if (isNaN(idx)) return;
 
-  // Точки в детальной карточке?
   const pdDotsRow = document.getElementById('pd-dots');
   if (pdDotsRow && pdDotsRow.contains(dot)) {
     const track = document.getElementById('pd-track');
@@ -199,7 +252,6 @@ document.addEventListener('click', function(e){
     return;
   }
 
-  // Точки в карточке на главной/каталоге
   const prod = dot.closest('.prod');
   if (prod) {
     const track = prod.querySelector('.ph-track');
@@ -284,6 +336,8 @@ async function loadCatalogScreen(){
 // ============ CATEGORY OVERLAY ============
 async function openCategoryOverlay(catId, title){
   const nested = document.getElementById('nested-screen');
+  nested.dataset.state = 'categories';
+  nested.dataset.catId = catId;
   document.getElementById('nested-title').textContent = title;
   document.getElementById('nested-content').innerHTML = '<p style="text-align:center;margin-top:50px;color:var(--hint);">Загрузка...</p>';
   nested.classList.add('show');
@@ -303,6 +357,9 @@ async function openCategoryOverlay(catId, title){
 window.openCategoryOverlay = openCategoryOverlay;
 
 async function openAllProductsInCategory(catId){
+  const nested = document.getElementById('nested-screen');
+  nested.dataset.state = 'all';
+  nested.dataset.catId = catId;
   const subs = await fetchData(`subcategories?category_id=eq.${catId}`);
   const subIds = subs.map(s => s.id);
   if (!subIds.length) { alert('Товаров нет'); return; }
@@ -315,6 +372,9 @@ async function openAllProductsInCategory(catId){
 window.openAllProductsInCategory = openAllProductsInCategory;
 
 async function openProductsInSub(subId){
+  const nested = document.getElementById('nested-screen');
+  nested.dataset.state = 'products';
+  nested.dataset.subId = subId;
   const products = await fetchData(`products?subcategory_id=eq.${subId}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
@@ -362,8 +422,8 @@ async function openProductDetail(productId){
     <div class="pd-photo"><div class="ph-track" id="pd-track">${slides}</div></div>
     ${dots}
     <div class="pd-price-row">
-      <span class="pd-price">${p.price} ₽</span>
-      ${p.old_price ? `<span class="pd-old">${p.old_price} ₽</span>` : ''}
+      <span class="pd-price">${formatPrice(p.price)}</span>
+      ${p.old_price ? `<span class="pd-old">${formatPrice(p.old_price)}</span>` : ''}
     </div>
     <div class="pd-name">${p.title}</div>
     ${supplierBlock}
@@ -486,6 +546,7 @@ async function loadProfile(){
     isAdmin = admins.length > 0 || currentUserId === ADMIN_ID;
   } catch (e) { isAdmin = currentUserId === ADMIN_ID; }
   document.getElementById('admin-panel-btn').style.display = isAdmin ? 'block' : 'none';
+  updateCurrToggleUI();
 }
 
 // ============ SETTINGS / FAQ ============
@@ -848,5 +909,6 @@ document.getElementById('close-filter-modal-btn').onclick = async () => {
 };
 
 // ============ START ============
+updateCurrToggleUI();
 loadHome();
 updateFavBadges();
