@@ -275,6 +275,7 @@ async function loadHome(){
 
   // Featured categories (2 large tiles)
   const featuredWrap = document.getElementById('featured-cats');
+  const catsSection = document.getElementById('cats-section');
   if (featuredWrap) {
     const featured = cats.slice(0, 2);
     if (featured.length) {
@@ -285,9 +286,9 @@ async function loadHome(){
           <div class="fc-title">${c.title}</div>
         </div>
       `).join('');
-      featuredWrap.style.display = '';
+      if (catsSection) catsSection.style.display = '';
     } else {
-      featuredWrap.style.display = 'none';
+      if (catsSection) catsSection.style.display = 'none';
     }
   }
 
