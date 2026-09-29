@@ -150,8 +150,11 @@
         </div>
       </div>
       <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-        <div><b style="font-size:14px;">Валюта товаров</b><div style="font-size:12px;color:var(--hint);">Курс каталога</div></div>
-        <div style="font-weight:bold;font-size:14px;">1 ₽ = 5,94 ₸</div>
+        <div><b style="font-size:14px;">Валюта товаров</b><div style="font-size:12px;color:var(--hint);">Цены в каталоге</div></div>
+        <div class="curr-toggle" id="curr-toggle">
+          <button data-cur="RUB" onclick="setCurrency('RUB')">₽ RUB</button>
+          <button data-cur="KZT" onclick="setCurrency('KZT')">₸ KZT</button>
+        </div>
       </div>
       <div class="card" style="padding:0;">
         <div class="menu-row" id="open-settings-btn">
