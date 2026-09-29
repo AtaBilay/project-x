@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Просто выгодно</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
@@ -42,11 +42,18 @@
         </div>
       </div>
       <div id="home-block">
-        <div class="grid2" id="featured-cats"></div>
-        <div class="sec-head"><div class="sec-title">🔥 Горячие предложения</div></div>
-        <div class="grid2" id="hot-grid"></div>
-        <div class="sec-head"><div class="sec-title">⭐ ТОП товары недели</div></div>
-        <div class="grid2" id="top-grid"></div>
+        <div class="home-section" id="cats-section">
+          <div class="sec-head"><div class="sec-title">Категории</div></div>
+          <div class="grid2" id="featured-cats"></div>
+        </div>
+        <div class="home-section">
+          <div class="sec-head"><div class="sec-title">🔥 Горячие предложения</div></div>
+          <div class="grid2" id="hot-grid"></div>
+        </div>
+        <div class="home-section">
+          <div class="sec-head"><div class="sec-title">⭐ ТОП товары недели</div></div>
+          <div class="grid2" id="top-grid"></div>
+        </div>
         <div class="card" style="margin-top:6px;">
           <span class="pill">Важно</span>
           <h3>Каталог проверенных поставщиков</h3>
@@ -342,6 +349,6 @@
   </div>
 </div>
 
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
