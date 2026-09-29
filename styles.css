@@ -99,7 +99,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
   gap:8px;
 }
 #cats-section{
-  padding-top:3px;
+  padding-top:0;
+  margin-bottom:8px;
 }
 #cats-section:empty,
 #cats-section .sec-head:only-child{
