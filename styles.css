@@ -96,10 +96,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
 .home-section{
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:8px;
 }
 #cats-section{
-  padding-top:6px;
+  padding-top:3px;
 }
 #cats-section:empty,
 #cats-section .sec-head:only-child{
