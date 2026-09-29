@@ -29,43 +29,37 @@ function formatPrice(price){
 }
 window.formatPrice = formatPrice;
 
-function setCurrency(cur){
-  currentCurrency = cur;
-  localStorage.setItem('currency', cur);
-  document.querySelectorAll('#curr-toggle button').forEach(b => {
-    b.classList.toggle('active', b.dataset.cur === cur);
-  });
-  rerenderAll();
-}
-window.setCurrency = setCurrency;
-
 function updateCurrToggleUI(){
   document.querySelectorAll('#curr-toggle button').forEach(b => {
-    b.classList.toggle('active', b.dataset.cur === currentCurrency);
+    const isActive = b.dataset.cur === currentCurrency;
+    b.classList.toggle('active', isActive);
+    b.style.background = isActive ? '#ffffff' : 'transparent';
+    b.style.color = isActive ? '#0f1116' : '#8b8d97';
+    b.style.boxShadow = isActive ? '0 1px 3px rgba(0,0,0,.08)' : 'none';
   });
 }
+window.updateCurrToggleUI = updateCurrToggleUI;
 
-function rerenderAll(){
-  const activeScreen = document.querySelector('.screen.active');
-  if (activeScreen) {
-    if (activeScreen.id === 'screen-home') loadHome();
-    else if (activeScreen.id === 'screen-catalog') loadCatalogScreen();
-    else if (activeScreen.id === 'screen-favorites') renderFavorites();
-    else if (activeScreen.id === 'screen-profile') updateCurrToggleUI();
-  }
-  const pdOverlay = document.getElementById('screen-product-detail');
-  if (pdOverlay.classList.contains('show') && currentDetailProductId) {
+function setCurrency(cur){
+  if (cur === currentCurrency) return;
+  currentCurrency = cur;
+  localStorage.setItem('currency', cur);
+  updateCurrToggleUI();
+  loadHome();
+  renderFavorites();
+  const pd = document.getElementById('screen-product-detail');
+  if (pd && pd.classList.contains('show') && currentDetailProductId) {
     openProductDetail(currentDetailProductId);
   }
   const nested = document.getElementById('nested-screen');
-  if (nested.classList.contains('show')) {
+  if (nested && nested.classList.contains('show')) {
     const st = nested.dataset.state;
     if (st === 'products') openProductsInSub(nested.dataset.subId);
     else if (st === 'all') openAllProductsInCategory(nested.dataset.catId);
     else if (st === 'categories') openCategoryOverlay(nested.dataset.catId, document.getElementById('nested-title').textContent);
   }
 }
-window.rerenderAll = rerenderAll;
+window.setCurrency = setCurrency;
 
 let favProducts = JSON.parse(localStorage.getItem('fav_products') || '[]');
 let favSuppliers = JSON.parse(localStorage.getItem('fav_suppliers') || '[]');
@@ -154,6 +148,7 @@ function heartSVG(active){
 
 // ============ NAVIGATION ============
 function goTab(name){
+  if (name === 'home') loadHome();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + name);
   if (el) el.classList.add('active');
