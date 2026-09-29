@@ -56,7 +56,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
   scrollbar-width:thin;
   scrollbar-color: rgba(43,127,224,.45) transparent;
 }
-/* Chrome / Safari / Telegram WebView */
 .chiprow::-webkit-scrollbar{
   height:4px;
 }
@@ -90,6 +89,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
 /* Section */
 .sec-head{display:flex;align-items:center;justify-content:space-between;}
 .sec-title{font-size:17px;font-weight:800;letter-spacing:-.2px;}
+
+/* ============================================
+   HOME SECTIONS — красивые отступы между блоками
+   ============================================ */
+.home-section{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#cats-section{
+  padding-top:6px;
+}
+#cats-section:empty,
+#cats-section .sec-head:only-child{
+  display:none;
+}
 
 /* Featured categories (2 big tiles on home) */
 #featured-cats{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
