@@ -150,7 +150,7 @@ function renderProductCard(p, imgs){
   const images = (imgs && imgs.length) ? imgs : [{ image_url: p.image_url || 'https://via.placeholder.com/300' }];
   const slides = images.map(im => `<div class="ph-slide"><img src="${im.image_url || im}" alt="" loading="lazy"></div>`).join('');
   const dots = images.length > 1
-    ? `<div class="ph-dotsrow">${images.map((_, i) => `<span class="pdot${i === 0 ? ' active' : ''}"></span>`).join('')}</div>`
+    ? `<div class="ph-dotsrow">${images.map((_, i) => `<span class="pdot${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="event.stopPropagation();goToSlide(this, ${i});"></span>`).join('')}</div>`
     : '';
   const badge = p.discount ? `<span class="tagbadge">${p.discount}</span>` : (p.is_hot ? '<span class="tagbadge">Hot</span>' : '');
   const fav = favProducts.includes(p.id);
@@ -168,6 +168,15 @@ function renderProductCard(p, imgs){
   </div>`;
 }
 window.renderProductCard = renderProductCard;
+
+function goToSlide(dotEl, idx){
+  const prod = dotEl.closest('.prod');
+  if (!prod) return;
+  const track = prod.querySelector('.ph-track');
+  if (!track) return;
+  track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+}
+window.goToSlide = goToSlide;
 
 document.addEventListener('scroll', (e) => {
   const t = e.target;
@@ -304,7 +313,7 @@ async function openProductDetail(productId){
   const images = await fetchData(`product_images?product_id=eq.${productId}`);
   const imgs = images.length ? images : [{ image_url: p.image_url || 'https://via.placeholder.com/300' }];
   const slides = imgs.map(im => `<div class="ph-slide"><img src="${im.image_url || im}" alt=""></div>`).join('');
-  const dots = imgs.length > 1 ? `<div class="pd-dots" id="pd-dots">${imgs.map((_, i) => `<span class="pdot${i === 0 ? ' active' : ''}"></span>`).join('')}</div>` : '';
+  const dots = imgs.length > 1 ? `<div class="pd-dots" id="pd-dots">${imgs.map((_, i) => `<span class="pdot${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="goToDetailSlide(${i})"></span>`).join('')}</div>` : '';
   let supplierBlock = '';
   if (p.supplier_id) {
     const supArr = await fetchData(`suppliers?id=eq.${p.supplier_id}`);
@@ -348,6 +357,13 @@ async function openProductDetail(productId){
   });
 }
 window.openProductDetail = openProductDetail;
+
+function goToDetailSlide(idx){
+  const track = document.getElementById('pd-track');
+  if (!track) return;
+  track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+}
+window.goToDetailSlide = goToDetailSlide;
 
 document.getElementById('pd-heart').addEventListener('click', () => {
   if (currentDetailProductId) {
