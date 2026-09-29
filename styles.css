@@ -99,9 +99,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;}
   flex-direction:column;
   gap:8px;
 }
+/* Отступ между секциями (🔥 → ⭐ и т.д.) */
+.home-section + .home-section,
+.home-section + .card{
+  margin-top:18px;
+}
 #cats-section{
   padding-top:0;
-  margin-bottom:18px;
 }
 #cats-section:empty,
 #cats-section .sec-head:only-child{
