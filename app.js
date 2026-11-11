@@ -518,17 +518,41 @@ window.renderFavorites = renderFavorites;
 
 // ============ PROFILE ============
 async function loadProfile(){
-  const name = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ') || 'Пользователь';
-  document.getElementById('user-name').textContent = name;
-  document.getElementById('user-username').textContent = tgUser?.username ? '@' + tgUser.username : 'Нет username';
-  if (tgUser?.photo_url) document.getElementById('user-avatar').src = tgUser.photo_url;
-  try {
-    const admins = await fetchData(`admins?telegram_id=eq.${currentUserId}`);
-    isAdmin = admins.length > 0 || currentUserId === ADMIN_ID;
-  } catch (e) { isAdmin = currentUserId === ADMIN_ID; }
+  // Ждем, пока Telegram на ПК передаст данные (максимум 1.5 сек)
+  let retries = 0;
+  while (!window.Telegram?.WebApp?.initDataUnsafe?.user && retries < 15) {
+    await new Promise(r => setTimeout(r, 100));
+    retries++;
+  }
+  
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  const isAdmin = (user?.id === ADMIN_ID) || (currentUserId === ADMIN_ID);
+  
+  console.log('[PROFILE] Данные из TG:', user);
+
+  document.getElementById('user-name').textContent = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : 'Пользователь';
+  document.getElementById('user-username').textContent = user?.username ? '@' + user.username : 'Нет username';
+
+  const av = document.getElementById('user-avatar');
+  if (av) {
+    if (user?.photo_url) {
+      const img = new Image();
+      img.onload = () => { av.innerHTML = `<img src="${user.photo_url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`; };
+      img.onerror = () => {
+        const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase();
+        av.textContent = initials || 'U';
+      };
+      img.src = user.photo_url;
+    } else {
+      const initials = ((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')).toUpperCase();
+      av.textContent = initials || 'U';
+    }
+  }
+
   document.getElementById('admin-panel-btn').style.display = isAdmin ? 'block' : 'none';
   updateCurrToggleUI();
 }
+window.loadProfile = loadProfile;
 
 // ============ SETTINGS / FAQ ============
 document.getElementById('open-settings-btn').onclick = () => {
@@ -619,7 +643,7 @@ document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-suppliers').classList.add('active');
 };
 
-// ============ CONTACTS MODAL (С ПРОВЕРКОЙ ОПЛАТЫ) ============
+// ============ CONTACTS MODAL ============
 async function showSupplierContacts(){
   const s = currentSupplierData;
   if (!s) return;
@@ -922,3 +946,4 @@ document.getElementById('close-filter-modal-btn').onclick = async () => {
 updateCurrToggleUI();
 loadHome();
 updateFavBadges();
+loadProfile(); // Запускаем профиль при старте
