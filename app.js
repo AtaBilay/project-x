@@ -184,7 +184,6 @@ document.addEventListener('scroll', (e) => {
   }
 }, true);
 
-// ============ ДЕЛЕГИРОВАННЫЙ КЛИК ПО ТОЧКАМ ============
 document.addEventListener('click', function(e){
   const dot = e.target.closest && e.target.closest('.pdot');
   if (!dot) return;
@@ -516,7 +515,7 @@ async function renderFavorites(){
 }
 window.renderFavorites = renderFavorites;
 
-// ============ PROFILE ============
+// ============ PROFILE (ИСПРАВЛЕНО ДЛЯ ПК) ============
 async function loadProfile(){
   // Ждем, пока Telegram на ПК передаст данные (максимум 1.5 сек)
   let retries = 0;
@@ -708,13 +707,36 @@ document.getElementById('admin-panel-btn').onclick = () => {
 };
 document.getElementById('admin-back-btn').onclick = () => goTab('profile');
 
-// ---------- ADD PRODUCT ----------
+// ---------- ADD PRODUCT (СВЯЗЬ КАТЕГОРИЙ) ----------
 document.getElementById('btn-add-product').onclick = async () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin-product').classList.add('active');
+  
   const categories = await fetchData('categories');
-  document.getElementById('product-category').innerHTML = categories.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
-  loadSubsAndSuppliers();
+  const allSubs = await fetchData('subcategories');
+  
+  const catSelect = document.getElementById('product-category');
+  catSelect.innerHTML = '<option value="">Сначала выберите раздел...</option>' + categories.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+  
+  const subSelect = document.getElementById('product-subcategory');
+  subSelect.innerHTML = '<option value="">Сначала выберите раздел...</option>';
+  subSelect.disabled = true;
+  
+  // Обработчик для фильтрации подкатегорий
+  catSelect.onchange = (e) => {
+    const catId = e.target.value;
+    if (!catId) {
+      subSelect.innerHTML = '<option value="">Сначала выберите раздел...</option>';
+      subSelect.disabled = true;
+      return;
+    }
+    const filteredSubs = allSubs.filter(s => s.category_id == catId);
+    subSelect.innerHTML = '<option value="">Выберите тип...</option>' + filteredSubs.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+    subSelect.disabled = false;
+  };
+
+  const suppliers = await fetchData('suppliers');
+  document.getElementById('product-supplier').innerHTML = '<option value="">Выберите поставщика...</option>' + suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 };
 document.getElementById('product-back-btn').onclick = () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -743,11 +765,6 @@ function renderImagePreviews(){
     };
     reader.readAsDataURL(file);
   });
-}
-async function loadSubsAndSuppliers(){
-  const [subs, sups] = await Promise.all([fetchData('subcategories'), fetchData('suppliers')]);
-  document.getElementById('product-subcategory').innerHTML = '<option value="">Выберите тип...</option>' + subs.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-  document.getElementById('product-supplier').innerHTML = '<option value="">Выберите поставщика...</option>' + sups.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 }
 document.getElementById('save-product-btn').onclick = async () => {
   const title = document.getElementById('product-title').value.trim();
@@ -849,7 +866,7 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   }
 };
 
-// ---------- CREATE MODAL ----------
+// ---------- CREATE MODAL (ПРИВЯЗКА КАТЕГОРИИ) ----------
 const modal = document.getElementById('create-modal');
 let modalType = 'category';
 document.getElementById('modal-image').addEventListener('change', (e) => {
@@ -868,28 +885,51 @@ document.getElementById('modal-image').addEventListener('change', (e) => {
   };
   reader.readAsDataURL(file);
 });
+
 document.getElementById('btn-add-category').onclick = () => openCreateModal('category', 'Новый раздел');
 document.getElementById('btn-add-subcategory').onclick = () => openCreateModal('subcategory', 'Новый тип');
-function openCreateModal(type, title){
+
+async function openCreateModal(type, title){
   modalType = type;
   document.getElementById('modal-name').value = '';
   document.getElementById('modal-image').value = '';
   document.getElementById('modal-image-preview-container').innerHTML = '';
   document.getElementById('modal-title').textContent = title;
+  
+  const parentSelect = document.getElementById('modal-parent-category');
+  if (type === 'subcategory') {
+    const cats = await fetchData('categories');
+    parentSelect.innerHTML = '<option value="">Выберите раздел...</option>' + cats.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+    parentSelect.style.display = 'block';
+  } else {
+    parentSelect.style.display = 'none';
+  }
+  
   modal.classList.remove('hidden');
 }
 document.getElementById('modal-cancel-btn').onclick = () => modal.classList.add('hidden');
+
 document.getElementById('modal-save-btn').onclick = async () => {
   const name = document.getElementById('modal-name').value.trim();
   const imgFile = document.getElementById('modal-image').files[0];
+  
   if (!name) { alert('Впиши название'); return; }
   if (!imgFile) { alert('Выбери иконку'); return; }
+  
+  let body = {};
+  if (modalType === 'subcategory') {
+    const parentId = document.getElementById('modal-parent-category').value;
+    if (!parentId) { alert('Выбери раздел, к которому относится этот тип'); return; }
+    body = { title: name, category_id: parentId };
+  } else {
+    body = { title: name };
+  }
+
   const url = await uploadImage(imgFile, 'category-images');
   if (!url) { alert('Ошибка загрузки'); return; }
+  body.image_url = url;
+
   const table = modalType === 'subcategory' ? 'subcategories' : 'categories';
-  const body = modalType === 'subcategory'
-    ? { title: name, image_url: url, category_id: (await fetchData('categories'))[0]?.id || 1 }
-    : { title: name, image_url: url };
   const data = await sbInsert(table, body);
   if (data) {
     modal.classList.add('hidden');
