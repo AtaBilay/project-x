@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Просто выгодно</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="styles.css?v=100">
+<link rel="stylesheet" href="styles.css?v=101">
 </head>
 <body>
 
@@ -233,9 +233,13 @@
 <div id="screen-admin-product" class="screen">
   <div class="topbar"><button class="backbtn" id="product-back-btn">←</button><h2>Новый товар</h2></div>
   <div class="scroll"><div class="content" style="padding-top:0;">
-    <select id="product-category" class="input-field"></select>
-    <select id="product-subcategory" class="input-field"></select>
-    <select id="product-supplier" class="input-field"></select>
+    <select id="product-category" class="input-field">
+      <option value="">Сначала выберите раздел...</option>
+    </select>
+    <select id="product-subcategory" class="input-field" disabled>
+      <option value="">Сначала выберите раздел...</option>
+    </select>
+    <select id="product-supplier" class="input-field"><option value="">Выберите поставщика...</option></select>
     <input type="text" id="product-title" placeholder="Название товара" class="input-field">
     <input type="number" id="product-price" placeholder="Цена (₽)" class="input-field">
     <input type="number" id="product-old-price" placeholder="Старая цена (если скидка)" class="input-field">
@@ -316,6 +320,12 @@
 <div id="create-modal" class="modal hidden">
   <div class="modal-content">
     <h3 id="modal-title" style="margin-top:0;">Создать</h3>
+    
+    <!-- НОВОЕ: Выбор родительского раздела для подкатегории -->
+    <select id="modal-parent-category" class="input-field" style="display:none; margin-bottom:10px;">
+      <option value="">Выберите раздел...</option>
+    </select>
+
     <input type="text" id="modal-name" placeholder="Название" class="input-field">
     <label for="modal-image" class="upload-area"><input type="file" id="modal-image" accept="image/*"><span>📸 Загрузить иконку</span></label>
     <div id="modal-image-preview-container" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;"></div>
@@ -349,6 +359,6 @@
   </div>
 </div>
 
-<script src="app.js?v=100"></script>
+<script src="app.js?v=101"></script>
 </body>
 </html>
