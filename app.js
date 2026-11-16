@@ -13,7 +13,6 @@ let currentSupplierData = null;
 let currentDetailProductId = null;
 let selectedFiles = [];
 
-// Сортировка (глобальная)
 let currentSort = localStorage.getItem('currentSort') || 'new'; 
 
 // ============ CURRENCY ============
@@ -104,19 +103,11 @@ async function fetchData(endpoint){
       headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' },
       cache: 'no-store' 
     });
-    
-    if (!r.ok) {
-      console.error("❌ Ошибка Supabase:", await r.text());
-      return [];
-    }
-    
+    if (!r.ok) return [];
     const data = await r.json();
     if (!Array.isArray(data)) return [];
     return data;
-  } catch(e){ 
-    console.error("❌ Ошибка сети:", e);
-    return []; 
-  }
+  } catch(e){ return []; }
 }
 
 async function sbInsert(table, body){
@@ -383,6 +374,7 @@ async function loadCatalogScreen(){
 
 // ============ CATEGORY OVERLAY ============
 async function openCategoryOverlay(catId, title){
+  document.getElementById('screen-product-detail').classList.remove('show');
   const nested = document.getElementById('nested-screen');
   nested.dataset.state = 'categories';
   nested.dataset.catId = catId;
@@ -405,6 +397,7 @@ async function openCategoryOverlay(catId, title){
 window.openCategoryOverlay = openCategoryOverlay;
 
 async function openAllProductsInCategory(catId){
+  document.getElementById('screen-product-detail').classList.remove('show');
   const nested = document.getElementById('nested-screen');
   nested.dataset.state = 'all';
   nested.dataset.catId = catId;
@@ -425,6 +418,7 @@ async function openAllProductsInCategory(catId){
 window.openAllProductsInCategory = openAllProductsInCategory;
 
 async function openProductsInSub(subId){
+  document.getElementById('screen-product-detail').classList.remove('show');
   const nested = document.getElementById('nested-screen');
   nested.dataset.state = 'products';
   nested.dataset.subId = subId;
@@ -444,6 +438,10 @@ window.openProductsInSub = openProductsInSub;
 // ============ PRODUCT DETAIL ============
 async function openProductDetail(productId){
   const overlay = document.getElementById('screen-product-detail');
+  
+  // ФИКС БАГА: Перемещаем карточку в конец body, чтобы она всегда была поверх остальных слоев
+  document.body.appendChild(overlay);
+  
   overlay.classList.add('show');
   currentDetailProductId = productId;
   const content = document.getElementById('detail-content');
@@ -574,7 +572,6 @@ function pickSortOption(val){
   setTimeout(() => {
     document.getElementById('sort-modal').classList.add('hidden');
     
-    // Обновляем тот экран, на котором находимся
     if (document.getElementById('screen-home').classList.contains('active')) {
         loadHome();
     } else if (document.getElementById('screen-catalog').classList.contains('active')) {
@@ -600,7 +597,6 @@ async function renderFavorites(){
   const goodsWrap = document.getElementById('fav-goods');
   const emptyGoods = document.getElementById('fav-goods-empty');
   
-  // Сортировка для товаров
   let orderParam = 'id.desc';
   if (currentSort === 'cheap') orderParam = 'price.asc';
   if (currentSort === 'expensive') orderParam = 'price.desc';
@@ -610,7 +606,6 @@ async function renderFavorites(){
     emptyGoods.style.display = 'flex';
   } else {
     emptyGoods.style.display = 'none';
-    // Принудительно делаем ID числами для корректной работы Supabase
     const safeIds = favProducts.map(Number).join(',');
     const products = await fetchData(`products?id=in.(${safeIds})&order=${orderParam}`);
     const imgs = products.length ? await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`) : [];
@@ -625,7 +620,6 @@ async function renderFavorites(){
   } else {
     emptySup.style.display = 'none';
     
-    // Сортировка для поставщиков (по алфавиту, если выбрана цена, или по ID)
     let supOrderParam = 'id.desc';
     if (currentSort === 'cheap' || currentSort === 'expensive') supOrderParam = 'name.asc';
 
@@ -707,6 +701,9 @@ document.getElementById('faq-list').innerHTML = faqData.map(f => `
 
 // ============ SUPPLIERS ============
 async function openSuppliersScreen(){
+  document.getElementById('screen-product-detail').classList.remove('show');
+  document.getElementById('nested-screen').classList.remove('show');
+  
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-suppliers').classList.add('active');
   const sups = await fetchData('suppliers?select=id,name,description,logo_url');
@@ -733,6 +730,9 @@ document.getElementById('suppliers-back-btn').onclick = () => {
 };
 
 async function openSupplierDetail(supplierId){
+  document.getElementById('screen-product-detail').classList.remove('show');
+  document.getElementById('nested-screen').classList.remove('show');
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-supplier-detail').classList.add('active');
   const wrap = document.getElementById('supplier-detail-content');
