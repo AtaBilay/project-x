@@ -3,7 +3,7 @@ const TG = window.Telegram?.WebApp;
 TG?.ready(); TG?.expand();
 
 const SUPABASE_URL = "https://chvwhwxqpeacuiyccexw.supabase.co";
-const SUPABASE_KEY = "sb_publishable_uMKtRMhQPVglw2Hhg0RImQ_FRFByVIr";
+const SUPABASE_KEY = "sb_publishable_uMKtRMhQPVglw2Hhg0RImQ_FRFByVIr"; 
 const ADMIN_ID = 6157818783;
 
 const tgUser = TG?.initDataUnsafe?.user;
@@ -12,6 +12,9 @@ let isAdmin = false;
 let currentSupplierData = null;
 let currentDetailProductId = null;
 let selectedFiles = [];
+
+// Сортировка (глобальная)
+let currentSort = localStorage.getItem('currentSort') || 'new'; 
 
 // ============ CURRENCY ============
 const KZT_RATE = 5.94;
@@ -53,14 +56,34 @@ function setCurrency(cur){
 }
 window.setCurrency = setCurrency;
 
+// ============ FAVORITES SYNC ============
 let favProducts = JSON.parse(localStorage.getItem('fav_products') || '[]');
 let favSuppliers = JSON.parse(localStorage.getItem('fav_suppliers') || '[]');
+
+async function syncFavoritesFromDB() {
+  if (!currentUserId) return;
+  try {
+    const res = await fetchData(`user_favorites?tg_id=eq.${currentUserId}`);
+    if (res && res.length > 0) {
+      favProducts = res.map(item => item.product_id);
+      localStorage.setItem('fav_products', JSON.stringify(favProducts));
+      updateFavBadges();
+      document.querySelectorAll(`[data-fav-pid]`).forEach(el => {
+        const id = parseInt(el.dataset.favPid);
+        const isFav = favProducts.includes(id);
+        el.classList.toggle('on', isFav);
+        el.innerHTML = heartSVG(isFav);
+      });
+    }
+  } catch (e) { console.error("Ошибка синхронизации избранного", e); }
+}
+
 function saveFavs(){
   localStorage.setItem('fav_products', JSON.stringify(favProducts));
   localStorage.setItem('fav_suppliers', JSON.stringify(favSuppliers));
 }
 
-// ============ SUPABASE ============
+// ============ SUPABASE HELPERS ============
 async function uploadImage(file, bucket = 'product-images'){
   const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
   try {
@@ -76,14 +99,24 @@ async function uploadImage(file, bucket = 'product-images'){
 
 async function fetchData(endpoint){
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' }
+    const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+    const r = await fetch(url, {
+      headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' },
+      cache: 'no-store' 
     });
-    if (!r.ok) return [];
+    
+    if (!r.ok) {
+      console.error("❌ Ошибка Supabase:", await r.text());
+      return [];
+    }
+    
     const data = await r.json();
     if (!Array.isArray(data)) return [];
     return data;
-  } catch(e){ return []; }
+  } catch(e){ 
+    console.error("❌ Ошибка сети:", e);
+    return []; 
+  }
 }
 
 async function sbInsert(table, body){
@@ -96,6 +129,15 @@ async function sbInsert(table, body){
     if (!r.ok) return null;
     return await r.json();
   } catch(e){ return null; }
+}
+
+async function sbDelete(table, query) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY }
+    });
+  } catch(e){ console.error(e); }
 }
 
 // ============ HEART SVG ============
@@ -116,7 +158,7 @@ function goTab(name){
 }
 window.goTab = goTab;
 
-// ============ FAVORITES ============
+// ============ FAVORITES UI ============
 function updateFavBadges(){
   const n = favProducts.length;
   document.querySelectorAll('.navdot').forEach(el => el.textContent = n);
@@ -125,9 +167,16 @@ function updateFavBadges(){
   if (gc) gc.textContent = n;
   if (sc) sc.textContent = favSuppliers.length;
 }
+
 function toggleFavProduct(id){
   const i = favProducts.indexOf(id);
-  if (i > -1) favProducts.splice(i, 1); else favProducts.push(id);
+  if (i > -1) {
+    favProducts.splice(i, 1);
+    if (currentUserId) sbDelete('user_favorites', `tg_id=eq.${currentUserId}&product_id=eq.${id}`);
+  } else {
+    favProducts.push(id);
+    if (currentUserId) sbInsert('user_favorites', { tg_id: currentUserId, product_id: id });
+  }
   saveFavs();
   updateFavBadges();
   document.querySelectorAll(`[data-fav-pid="${id}"]`).forEach(el => {
@@ -160,6 +209,7 @@ function renderProductCard(p, imgs){
     : '';
   const badge = p.discount ? `<span class="tagbadge">${p.discount}</span>` : (p.is_hot ? '<span class="tagbadge">Hot</span>' : '');
   const fav = favProducts.includes(p.id);
+  
   return `<div class="prod" onclick="openProductDetail(${p.id})">
     <div class="ph">
       <div class="ph-track" onscroll="updateDots(this)">${slides}</div>
@@ -218,7 +268,7 @@ document.addEventListener('click', function(e){
 
 // ============ LOAD HOME ============
 async function loadHome(){
-  let orderParam = 'id.desc'; // Новинки
+  let orderParam = 'id.desc'; 
   if (currentSort === 'cheap') orderParam = 'price.asc';
   if (currentSort === 'expensive') orderParam = 'price.desc';
 
@@ -226,6 +276,7 @@ async function loadHome(){
     fetchData('categories'),
     fetchData(`products?limit=200&order=${orderParam}`)
   ]);
+  
   const chiprow = document.getElementById('chiprow');
   if (!chiprow) return;
   chiprow.innerHTML = '<button class="chip active" data-cat="">Все</button>' +
@@ -425,6 +476,7 @@ async function openProductDetail(productId){
   const heartBtn = document.getElementById('pd-heart');
   heartBtn.classList.toggle('on', isFav);
   heartBtn.innerHTML = heartSVG(isFav);
+  
   content.innerHTML = `
     <div class="pd-photo"><div class="ph-track" id="pd-track" onscroll="updateDots(this)">${slides}</div></div>
     ${dots}
@@ -462,33 +514,41 @@ searchInput.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(runSearch, 350);
 });
+
 async function runSearch(){
   const q = searchInput.value.trim();
   const block = document.getElementById('search-block');
   const home = document.getElementById('home-block');
-  if (!q) { block.style.display = 'none'; home.style.display = 'block'; return; }
+  
+  if (!q) { 
+    block.style.display = 'none'; 
+    home.style.display = 'block'; 
+    return; 
+  }
+  
   block.style.display = 'block';
   home.style.display = 'none';
   
+  const searchQuery = encodeURIComponent(q);
   let orderParam = 'id.desc';
   if (currentSort === 'cheap') orderParam = 'price.asc';
   if (currentSort === 'expensive') orderParam = 'price.desc';
 
-  const res = await fetchData(`products?title=ilike.*${encodeURIComponent(q)}*&limit=30&order=${orderParam}`);
+  const res = await fetchData(`products?or=(title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*)&limit=50&order=${orderParam}`);
+  
   const empty = document.getElementById('search-empty');
   if (!res.length) {
     document.getElementById('search-results').innerHTML = '';
     empty.style.display = 'flex';
     return;
   }
+  
   empty.style.display = 'none';
   const imgs = await fetchData(`product_images?product_id=in.(${res.map(p => p.id).join(',')})`);
   document.getElementById('search-results').innerHTML = res.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('');
 }
 
-// ============ SORT (РЕАЛЬНАЯ) ============
-let currentSort = localStorage.getItem('currentSort') || 'new'; 
-
+// ============ SORT ============
 function openSortSheet(){ 
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === currentSort;
@@ -503,7 +563,7 @@ document.getElementById('sort-modal-backdrop').onclick = () => document.getEleme
 
 function pickSortOption(val){
   currentSort = val;
-  localStorage.setItem('currentSort', val);
+  localStorage.setItem('currentSort', val); 
   
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === val;
@@ -513,10 +573,14 @@ function pickSortOption(val){
   });
   setTimeout(() => {
     document.getElementById('sort-modal').classList.add('hidden');
+    
+    // Обновляем тот экран, на котором находимся
     if (document.getElementById('screen-home').classList.contains('active')) {
         loadHome();
     } else if (document.getElementById('screen-catalog').classList.contains('active')) {
         loadCatalogScreen();
+    } else if (document.getElementById('screen-favorites').classList.contains('active')) {
+        renderFavorites();
     }
   }, 200);
 }
@@ -535,15 +599,21 @@ async function renderFavorites(){
   updateFavBadges();
   const goodsWrap = document.getElementById('fav-goods');
   const emptyGoods = document.getElementById('fav-goods-empty');
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
   if (!favProducts.length) {
     goodsWrap.innerHTML = '';
     emptyGoods.style.display = 'flex';
   } else {
     emptyGoods.style.display = 'none';
-    const products = await fetchData(`products?id=in.(${favProducts.join(',')})`);
+    const products = await fetchData(`products?id=in.(${favProducts.join(',')})&order=${orderParam}`);
     const imgs = products.length ? await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`) : [];
     goodsWrap.innerHTML = products.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('');
   }
+  
   const supWrap = document.getElementById('fav-suppliers-list');
   const emptySup = document.getElementById('fav-sup-empty');
   if (!favSuppliers.length) {
@@ -594,6 +664,7 @@ async function loadProfile(){
 
   document.getElementById('admin-panel-btn').style.display = isAdmin ? 'block' : 'none';
   updateCurrToggleUI();
+  syncFavoritesFromDB();
 }
 window.loadProfile = loadProfile;
 
@@ -657,14 +728,21 @@ async function openSupplierDetail(supplierId){
   document.getElementById('screen-supplier-detail').classList.add('active');
   const wrap = document.getElementById('supplier-detail-content');
   wrap.innerHTML = '<p style="text-align:center;margin-top:50px;color:var(--hint);">Загрузка...</p>';
+  
   const arr = await fetchData(`suppliers?id=eq.${supplierId}&select=id,name,description,logo_url`);
   if (!arr.length) return;
   const s = arr[0];
   currentSupplierData = s;
-  const products = await fetchData(`products?supplier_id=eq.${supplierId}&limit=30`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?supplier_id=eq.${supplierId}&limit=30&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   const isFav = favSuppliers.includes(s.id);
+  
   wrap.innerHTML = `
     <div class="pd-supplier">
       <div class="avatar" style="width:56px;height:56px;">${s.logo_url ? `<img src="${s.logo_url}">` : s.name.slice(0, 2)}</div>
@@ -686,12 +764,12 @@ document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-suppliers').classList.add('active');
 };
 
-// ============ CONTACTS MODAL ============
+// ============ CONTACTS MODAL (PAYWALL) ============
 async function showSupplierContacts(){
   const s = currentSupplierData;
   if (!s) return;
 
-  const tgId = currentUserId;
+  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
   if (!tgId) {
     alert('Не удалось определить ваш Telegram ID. Перезапустите приложение.');
     return;
