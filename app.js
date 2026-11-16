@@ -12,6 +12,7 @@ let isAdmin = false;
 let currentSupplierData = null;
 let currentDetailProductId = null;
 let selectedFiles = [];
+let currentSupplierDetailId = null; 
 
 let currentSort = localStorage.getItem('currentSort') || 'new'; 
 
@@ -438,10 +439,7 @@ window.openProductsInSub = openProductsInSub;
 // ============ PRODUCT DETAIL ============
 async function openProductDetail(productId){
   const overlay = document.getElementById('screen-product-detail');
-  
-  // ФИКС БАГА: Перемещаем карточку в конец body, чтобы она всегда была поверх остальных слоев
   document.body.appendChild(overlay);
-  
   overlay.classList.add('show');
   currentDetailProductId = productId;
   const content = document.getElementById('detail-content');
@@ -578,6 +576,8 @@ function pickSortOption(val){
         loadCatalogScreen();
     } else if (document.getElementById('screen-favorites').classList.contains('active')) {
         renderFavorites();
+    } else if (document.getElementById('screen-supplier-detail').classList.contains('active') && currentSupplierDetailId) {
+        renderSupplierProducts(currentSupplierDetailId); 
     }
   }, 200);
 }
@@ -619,7 +619,6 @@ async function renderFavorites(){
     emptySup.style.display = 'flex';
   } else {
     emptySup.style.display = 'none';
-    
     let supOrderParam = 'id.desc';
     if (currentSort === 'cheap' || currentSort === 'expensive') supOrderParam = 'name.asc';
 
@@ -735,6 +734,8 @@ async function openSupplierDetail(supplierId){
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-supplier-detail').classList.add('active');
+  
+  currentSupplierDetailId = supplierId;
   const wrap = document.getElementById('supplier-detail-content');
   wrap.innerHTML = '<p style="text-align:center;margin-top:50px;color:var(--hint);">Загрузка...</p>';
   
@@ -742,14 +743,6 @@ async function openSupplierDetail(supplierId){
   if (!arr.length) return;
   const s = arr[0];
   currentSupplierData = s;
-  
-  let orderParam = 'id.desc';
-  if (currentSort === 'cheap') orderParam = 'price.asc';
-  if (currentSort === 'expensive') orderParam = 'price.desc';
-
-  const products = await fetchData(`products?supplier_id=eq.${supplierId}&limit=30&order=${orderParam}`);
-  let imgs = [];
-  if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   const isFav = favSuppliers.includes(s.id);
   
   wrap.innerHTML = `
@@ -758,19 +751,64 @@ async function openSupplierDetail(supplierId){
       <div style="flex:1;min-width:0;"><b style="font-size:16px;">${s.name}</b><div style="font-size:13px;color:var(--hint);">${s.description || ''}</div></div>
       <button class="heart-ic ${isFav ? 'on' : ''}" data-fav-sid="${s.id}" style="color:${isFav ? '#ff4d67' : 'var(--hint)'};" onclick="event.stopPropagation();toggleFavSupplier(${s.id});">${heartSVG(isFav)}</button>
     </div>
-    <div class="pd-actions" style="margin-bottom:16px;">
-      <button onclick="showSupplierContacts()">💬 Контакты</button>
-      <button onclick="alert('Ассортимент скоро')">🏬 Ассортимент</button>
+
+    <!-- Поиск над контактами -->
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <div class="search" style="flex:1;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="sup-search-input" placeholder="Поиск по ассортименту" autocomplete="off" oninput="renderSupplierProducts(${s.id})">
+      </div>
+      <button class="sqbtn" onclick="openSortSheet()">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 7h12M9 12h6M11 17h2"/></svg>
+      </button>
     </div>
-    ${products.length
-      ? `<div class="sec-title" style="margin-bottom:10px;">Товары поставщика</div><div class="grid2">${products.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('')}</div>`
-      : '<p style="text-align:center;color:var(--hint);margin-top:30px;">Товаров пока нет</p>'}
+
+    <!-- Только кнопка контактов, растянутая на всю ширину -->
+    <div class="pd-actions" style="margin-bottom:20px; grid-template-columns: 1fr;">
+      <button onclick="showSupplierContacts()">💬 Контакты</button>
+    </div>
+    
+    <div class="sec-title" style="margin-bottom:10px;">Товары поставщика</div>
+    <div id="supplier-products-grid" class="grid2"></div>
   `;
+  
+  renderSupplierProducts(supplierId);
 }
 window.openSupplierDetail = openSupplierDetail;
+
+// ФУНКЦИЯ ДЛЯ ОТРИСОВКИ ТОВАРОВ ПОСТАВЩИКА С ПОИСКОМ
+async function renderSupplierProducts(supplierId) {
+    const grid = document.getElementById('supplier-products-grid');
+    if (!grid) return;
+    
+    const query = document.getElementById('sup-search-input')?.value.trim() || '';
+    
+    let orderParam = 'id.desc';
+    if (currentSort === 'cheap') orderParam = 'price.asc';
+    if (currentSort === 'expensive') orderParam = 'price.desc';
+    
+    let url = `products?supplier_id=eq.${supplierId}&limit=50&order=${orderParam}`;
+    if (query) {
+        url += `&title=ilike.*${encodeURIComponent(query)}*`;
+    }
+    
+    grid.innerHTML = '<p style="text-align:center;grid-column:1/-1;color:var(--hint);margin-top:20px;">Загрузка...</p>';
+    
+    const products = await fetchData(url);
+    if (!products.length) {
+        grid.innerHTML = '<p style="text-align:center;grid-column:1/-1;color:var(--hint);margin-top:20px;">Товары не найдены</p>';
+        return;
+    }
+    
+    const imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
+    grid.innerHTML = products.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('');
+}
+window.renderSupplierProducts = renderSupplierProducts;
+
 document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-supplier-detail').classList.remove('active');
   document.getElementById('screen-suppliers').classList.add('active');
+  currentSupplierDetailId = null;
 };
 
 // ============ CONTACTS MODAL (PAYWALL) ============
@@ -801,20 +839,21 @@ async function showSupplierContacts(){
       })
     });
 
-    if (res.status === 403) {
-      const html = `
-        <p style="text-align:center; color:var(--hint); margin: 20px 0; font-size: 14px;">
-          Контакты поставщиков доступны только по подписке.
-        </p>
-        <button class="admin-big-btn" style="background:var(--btn); color:white; margin-top:10px;" onclick="TG.close();">
-          Оформить доступ в боте
-        </button>
-      `;
-      document.getElementById('supplier-contacts-list').innerHTML = html;
-      return;
+    if (!res.ok) {
+      if (res.status === 400 || res.status === 403) {
+        const paywallHtml = `
+          <p style="text-align:center; color:var(--hint); margin: 20px 0; font-size: 14px;">
+            Контакты поставщиков доступны только по подписке.
+          </p>
+          <button class="admin-big-btn" style="background:var(--btn); color:white; margin-top:10px;" onclick="TG.close();">
+            Оформить доступ в боте
+          </button>
+        `;
+        document.getElementById('supplier-contacts-list').innerHTML = paywallHtml;
+        return;
+      }
+      throw new Error('Ошибка сервера');
     }
-
-    if (!res.ok) throw new Error('Ошибка сервера');
     
     const contacts = await res.json();
     let html = `<p style="color:var(--hint);font-size:13px;margin:0 0 14px 0;">${s.name}</p>`;
@@ -840,7 +879,7 @@ async function showSupplierContacts(){
 
   } catch (error) {
     console.error(error);
-    document.getElementById('supplier-contacts-list').innerHTML = '<p style="text-align:center;color:red;margin:20px;">Ошибка загрузки контактов.</p>';
+    document.getElementById('supplier-contacts-list').innerHTML = '<p style="text-align:center;color:red;margin:20px;">Не удалось загрузить контакты. Проверьте соединение.</p>';
   }
 }
 window.showSupplierContacts = showSupplierContacts;
