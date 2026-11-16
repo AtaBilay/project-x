@@ -14,7 +14,6 @@ let currentDetailProductId = null;
 let selectedFiles = [];
 let currentSupplierDetailId = null; 
 
-// Храним историю для кнопки "Назад"
 let prevScreenId = null;
 let prevOverlays = [];
 
@@ -679,6 +678,7 @@ window.loadProfile = loadProfile;
 document.getElementById('open-settings-btn').onclick = () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-settings').classList.add('active');
+  loadSettingsScreen(); // Загружаем статус подписки при входе
 };
 document.getElementById('settings-back-btn').onclick = () => goTab('profile');
 document.getElementById('open-faq-btn').onclick = () => {
@@ -686,6 +686,84 @@ document.getElementById('open-faq-btn').onclick = () => {
   document.getElementById('screen-faq').classList.add('active');
 };
 document.getElementById('faq-back-btn').onclick = () => goTab('profile');
+
+// НОВАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ СТАТУСА ПОДПИСКИ
+async function loadSettingsScreen() {
+  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (!tgId) return;
+
+  const btn = document.getElementById('cancel-sub-btn');
+  const statusText = document.getElementById('sub-status-text');
+  const pill = document.getElementById('sub-status-pill');
+  const desc = document.getElementById('sub-desc');
+
+  btn.style.display = 'none';
+  statusText.textContent = 'Загрузка...';
+  pill.style.display = 'none';
+
+  try {
+    const res = await fetchData(`subscriptions?tg_id=eq.${tgId}`);
+    if (res && res.length > 0) {
+      const sub = res[0];
+      const isActive = sub.status === 'active' && new Date(sub.expires_at) > new Date();
+
+      if (isActive) {
+        statusText.textContent = 'Доступ открыт';
+        pill.textContent = 'Активна';
+        pill.style.cssText = 'background:#e3f8ea;color:#1fa956;display:inline-block;';
+        desc.innerHTML = `Автопродление включено.<br>Действует до: <b>${new Date(sub.expires_at).toLocaleDateString('ru-RU')}</b>`;
+        
+        btn.style.display = 'block';
+        btn.textContent = 'Отключить автопродление';
+        btn.onclick = () => confirmCancelSub(tgId);
+      } else {
+        statusText.textContent = 'Доступ ограничен';
+        pill.textContent = sub.status === 'cancelled' ? 'Отменена' : 'Истекла';
+        pill.style.cssText = 'background:#e6e6e6;color:#666;display:inline-block;';
+        desc.textContent = 'Подписка не активна. Автопродление выключено.';
+      }
+    } else {
+      statusText.textContent = 'Доступ ограничен';
+      pill.textContent = 'Нет подписки';
+      pill.style.cssText = 'background:#e6e6e6;color:#666;display:inline-block;';
+      desc.textContent = 'У вас нет активной подписки.';
+    }
+  } catch(e) {
+    statusText.textContent = 'Ошибка';
+    desc.textContent = 'Не удалось загрузить данные подписки.';
+  }
+}
+
+async function confirmCancelSub(tgId) {
+  if (!confirm('Вы уверены, что хотите отключить автопродление? Доступ сохранится до конца оплаченного периода, но деньги больше не будут списываться.')) return;
+
+  const btn = document.getElementById('cancel-sub-btn');
+  btn.textContent = 'Отключение...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/cancel_subscription`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_tg_id: tgId })
+    });
+
+    if (res.ok) {
+      alert('✅ Автопродление отключено. Доступ сохранится до конца периода.');
+      loadSettingsScreen(); // Перезагружаем экран
+    } else {
+      alert('Ошибка отключения');
+    }
+  } catch(e) {
+    alert('Ошибка сети');
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 const faqData = [
   { q: 'Как оформить заказ?', a: 'Просто выгодно — это каталог поставщиков, а не интернет-магазин. Откройте пост поставщика, перейдите по ссылке, изучите ассортимент и свяжитесь с поставщиком напрямую, чтобы согласовать заказ, доставку и оплату.' },
