@@ -600,6 +600,7 @@ async function renderFavorites(){
   const goodsWrap = document.getElementById('fav-goods');
   const emptyGoods = document.getElementById('fav-goods-empty');
   
+  // Сортировка для товаров
   let orderParam = 'id.desc';
   if (currentSort === 'cheap') orderParam = 'price.asc';
   if (currentSort === 'expensive') orderParam = 'price.desc';
@@ -609,7 +610,9 @@ async function renderFavorites(){
     emptyGoods.style.display = 'flex';
   } else {
     emptyGoods.style.display = 'none';
-    const products = await fetchData(`products?id=in.(${favProducts.join(',')})&order=${orderParam}`);
+    // Принудительно делаем ID числами для корректной работы Supabase
+    const safeIds = favProducts.map(Number).join(',');
+    const products = await fetchData(`products?id=in.(${safeIds})&order=${orderParam}`);
     const imgs = products.length ? await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`) : [];
     goodsWrap.innerHTML = products.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('');
   }
@@ -621,7 +624,13 @@ async function renderFavorites(){
     emptySup.style.display = 'flex';
   } else {
     emptySup.style.display = 'none';
-    const sups = await fetchData(`suppliers?id=in.(${favSuppliers.join(',')})&select=id,name,description,logo_url`);
+    
+    // Сортировка для поставщиков (по алфавиту, если выбрана цена, или по ID)
+    let supOrderParam = 'id.desc';
+    if (currentSort === 'cheap' || currentSort === 'expensive') supOrderParam = 'name.asc';
+
+    const safeSupIds = favSuppliers.map(Number).join(',');
+    const sups = await fetchData(`suppliers?id=in.(${safeSupIds})&select=id,name,description,logo_url&order=${supOrderParam}`);
     supWrap.innerHTML = sups.map(s => `
       <div class="list-row" onclick="openSupplierDetail(${s.id})">
         <div class="avatar">${s.logo_url ? `<img src="${s.logo_url}">` : s.name.slice(0, 2)}</div>
