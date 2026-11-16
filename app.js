@@ -145,7 +145,7 @@ function heartSVG(active){
 function goTab(name){
   if (name === 'home') loadHome();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show')); // сбрасываем оверлеи при переходе по табам
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
   const el = document.getElementById('screen-' + name);
   if (el) el.classList.add('active');
   document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -732,15 +732,12 @@ document.getElementById('suppliers-back-btn').onclick = () => {
 };
 
 async function openSupplierDetail(supplierId){
-  // ЗАПОМИНАЕМ, ОТКУДА ПРИШЛИ
   prevScreenId = document.querySelector('.screen.active')?.id || 'screen-catalog';
   prevOverlays = Array.from(document.querySelectorAll('.overlay.show')).map(el => el.id);
 
-  // СКРЫВАЕМ ВСЁ
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
 
-  // ОТКРЫВАЕМ ПОСТАВЩИКА
   document.getElementById('screen-supplier-detail').classList.add('active');
   currentSupplierDetailId = supplierId;
   
@@ -813,7 +810,6 @@ window.renderSupplierProducts = renderSupplierProducts;
 document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-supplier-detail').classList.remove('active');
   
-  // ВОЗВРАЩАЕМ ТУДА, ОТКУДА ПРИШЛИ
   if (prevScreenId) {
     document.getElementById(prevScreenId).classList.add('active');
   } else {
@@ -840,7 +836,11 @@ async function showSupplierContacts(){
   }
 
   document.getElementById('supplier-contacts-list').innerHTML = '<p style="text-align:center;margin:20px;">Загрузка контактов...</p>';
-  document.getElementById('supplier-contacts-modal').classList.remove('hidden');
+  
+  // ВЫТАСКИВАЕМ МОДАЛКУ НАВЕРХ, ЧТОБЫ ОНА БЫЛА ПОВЕРХ ВСЕГО
+  const modal = document.getElementById('supplier-contacts-modal');
+  document.body.appendChild(modal);
+  modal.classList.remove('hidden');
 
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_supplier_contacts`, {
