@@ -96,17 +96,25 @@ async function uploadImage(file, bucket = 'product-images'){
 
 async function fetchData(endpoint){
   try {
-    const separator = endpoint.includes('?') ? '&' : '?';
-    const url = `${SUPABASE_URL}/rest/v1/${endpoint}${separator}_t=${Date.now()}`;
+    const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
     
     const r = await fetch(url, {
-      headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' }
+      headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' },
+      cache: 'no-store' // ФИКС КЭША: Отключает кэширование без поломки API Supabase
     });
-    if (!r.ok) return [];
+    
+    if (!r.ok) {
+      console.error("❌ Ошибка Supabase:", await r.text());
+      return [];
+    }
+    
     const data = await r.json();
     if (!Array.isArray(data)) return [];
     return data;
-  } catch(e){ return []; }
+  } catch(e){ 
+    console.error("❌ Ошибка сети:", e);
+    return []; 
+  }
 }
 
 async function sbInsert(table, body){
@@ -200,7 +208,6 @@ function renderProductCard(p, imgs){
   const badge = p.discount ? `<span class="tagbadge">${p.discount}</span>` : (p.is_hot ? '<span class="tagbadge">Hot</span>' : '');
   const fav = favProducts.includes(p.id);
   
-  // ДОБАВЛЕН onscroll="updateDots(this)" ВНУТРЬ .ph-track
   return `<div class="prod" onclick="openProductDetail(${p.id})">
     <div class="ph">
       <div class="ph-track" onscroll="updateDots(this)">${slides}</div>
@@ -216,18 +223,16 @@ function renderProductCard(p, imgs){
 }
 window.renderProductCard = renderProductCard;
 
-// ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ТОЧЕК
+// ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ТОЧЕК (КАРУСЕЛЬ)
 window.updateDots = function(track) {
   if (!track || !track.clientWidth) return;
   const idx = Math.round(track.scrollLeft / track.clientWidth);
   
-  // Обновление для карточки товара
   const dotsRow = track.closest('.prod')?.querySelector('.ph-dotsrow');
   if (dotsRow) {
     dotsRow.querySelectorAll('.pdot').forEach((d, i) => d.classList.toggle('active', i === idx));
   }
   
-  // Обновление для детальной страницы товара
   const pdDots = document.getElementById('pd-dots');
   if (pdDots && track.id === 'pd-track') {
     pdDots.querySelectorAll('.pdot').forEach((d, i) => d.classList.toggle('active', i === idx));
@@ -468,7 +473,6 @@ async function openProductDetail(productId){
   heartBtn.classList.toggle('on', isFav);
   heartBtn.innerHTML = heartSVG(isFav);
   
-  // ДОБАВЛЕН onscroll="updateDots(this)"
   content.innerHTML = `
     <div class="pd-photo"><div class="ph-track" id="pd-track" onscroll="updateDots(this)">${slides}</div></div>
     ${dots}
@@ -541,11 +545,9 @@ async function runSearch(){
 }
 
 // ============ SORT (РЕАЛЬНАЯ) ============
-// Читаем сохраненный выбор из памяти телефона
 let currentSort = localStorage.getItem('currentSort') || 'new'; 
 
 function openSortSheet(){ 
-  // Обновляем галочки перед открытием, чтобы показать текущий выбор
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === currentSort;
     o.classList.toggle('active', on);
@@ -559,7 +561,7 @@ document.getElementById('sort-modal-backdrop').onclick = () => document.getEleme
 
 function pickSortOption(val){
   currentSort = val;
-  localStorage.setItem('currentSort', val); // ЗАПОМИНАЕМ ВЫБОР
+  localStorage.setItem('currentSort', val); 
   
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === val;
