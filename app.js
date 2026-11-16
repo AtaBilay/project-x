@@ -837,7 +837,6 @@ async function showSupplierContacts(){
 
   document.getElementById('supplier-contacts-list').innerHTML = '<p style="text-align:center;margin:20px;">Загрузка контактов...</p>';
   
-  // ВЫТАСКИВАЕМ МОДАЛКУ НАВЕРХ, ЧТОБЫ ОНА БЫЛА ПОВЕРХ ВСЕГО
   const modal = document.getElementById('supplier-contacts-modal');
   document.body.appendChild(modal);
   modal.classList.remove('hidden');
@@ -869,6 +868,8 @@ async function showSupplierContacts(){
         document.getElementById('supplier-contacts-list').innerHTML = paywallHtml;
         return;
       }
+      const errorText = await res.text();
+      console.error("Ошибка Supabase:", res.status, errorText);
       throw new Error('Ошибка сервера');
     }
     
@@ -879,16 +880,23 @@ async function showSupplierContacts(){
       html += '<p style="text-align:center;color:var(--hint);margin:20px 0;">У поставщика пока нет контактов.</p>';
     } else {
       contacts.forEach(c => {
-        let icon = '🔗', label = c.type;
+        let icon = '🔗', label = c.type || 'Ссылка';
+        let linkValue = c.url || c.value; 
+        
+        if (!linkValue) return;
+
         if (c.type === 'telegram') { icon = '✈️'; label = 'Telegram'; }
         else if (c.type === 'whatsapp') { icon = '💬'; label = 'WhatsApp'; }
         else if (c.type === 'phone') { icon = '📞'; label = 'Телефон'; }
         else if (c.type === 'vk') { icon = '📘'; label = 'VK'; }
         else if (c.type === 'website') { icon = '🌐'; label = 'Сайт'; }
-        let link = c.value.startsWith('http') ? c.value : 'https://' + c.value;
+        else if (c.type === 'max') { icon = '🟣'; label = 'MAX'; }
+
+        let link = linkValue.startsWith('http') ? linkValue : 'https://' + linkValue;
+        
         html += `<div style="background:var(--secbg);padding:14px;border-radius:12px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
           <div style="font-size:22px;">${icon}</div>
-          <div style="flex:1;min-width:0;"><b style="font-size:14px;">${label}</b><div><a href="${link}" target="_blank" style="color:var(--btn);text-decoration:underline;font-size:13px;word-break:break-all;">${c.value}</a></div></div>
+          <div style="flex:1;min-width:0;"><b style="font-size:14px;">${label}</b><div><a href="${link}" target="_blank" style="color:var(--btn);text-decoration:underline;font-size:13px;word-break:break-all;">${linkValue}</a></div></div>
         </div>`;
       });
     }
