@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Просто выгодно</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="styles.css?v=107">
+<link rel="stylesheet" href="styles.css?v=108">
 </head>
 <body>
 
@@ -199,12 +199,17 @@
 <div id="screen-settings" class="screen">
   <div class="topbar"><button class="backbtn" id="settings-back-btn">←</button><h2>Настройки</h2></div>
   <div class="scroll"><div class="content">
-    <div class="card">
+    <div class="card" id="settings-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div><span style="font-size:12px;color:var(--hint);">Подписка «Просто выгодно»</span><div class="bigprice">Доступ ограничен</div></div>
-        <span class="paidpill" style="background:#e6e6e6;color:#666;">Ограничен</span>
+        <div>
+          <span style="font-size:12px;color:var(--hint);">Подписка «Просто выгодно»</span>
+          <div class="bigprice" id="sub-status-text">Загрузка...</div>
+        </div>
+        <span class="paidpill" id="sub-status-pill" style="display:none;">...</span>
       </div>
-      <div class="notice" style="margin-top:14px;">Автопродление выключено. Текущий доступ не изменится.</div>
+      <div class="notice" style="margin-top:14px;" id="sub-desc">Проверяем статус...</div>
+      
+      <button class="admin-big-btn" id="cancel-sub-btn" style="display:none; background:#ffebeb; color:#d00; margin-top:14px; border:1px solid #ffcaca;">Отключить автопродление</button>
     </div>
   </div></div>
 </div>
@@ -350,6 +355,6 @@
   </div>
 </div>
 
-<script src="app.js?v=107"></script>
+<script src="app.js?v=108"></script>
 </body>
 </html>
