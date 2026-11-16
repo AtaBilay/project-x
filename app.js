@@ -745,6 +745,7 @@ async function openSupplierDetail(supplierId){
   currentSupplierData = s;
   const isFav = favSuppliers.includes(s.id);
   
+  // ПОИСК И СОРТИРОВКА НАД КОНТАКТАМИ
   wrap.innerHTML = `
     <div class="pd-supplier">
       <div class="avatar" style="width:56px;height:56px;">${s.logo_url ? `<img src="${s.logo_url}">` : s.name.slice(0, 2)}</div>
@@ -763,7 +764,7 @@ async function openSupplierDetail(supplierId){
       </button>
     </div>
 
-    <!-- Только кнопка контактов, растянутая на всю ширину -->
+    <!-- ТОЛЬКО КНОПКА КОНТАКТОВ, РАСТЯНУТАЯ НА ВСЮ ШИРИНУ -->
     <div class="pd-actions" style="margin-bottom:20px; grid-template-columns: 1fr;">
       <button onclick="showSupplierContacts()">💬 Контакты</button>
     </div>
