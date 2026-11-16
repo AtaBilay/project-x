@@ -159,6 +159,7 @@ select:disabled{background:var(--secbg);color:var(--hint);cursor:not-allowed;}
 .curr-toggle button{ position:relative; z-index:1; flex:1; border:none !important; background:transparent !important; font-size:13px; font-weight:700; padding:8px 14px; border-radius:8px; color:var(--hint); cursor:pointer; font-family:inherit; box-shadow:none !important; transition:color .35s ease; white-space:nowrap; }
 .curr-toggle button.active{ color:var(--text); }
 
-/* ФИКС СЛОЕВ */
+/* ФИКС СЛОЕВ И МОДАЛОК */
 #nested-screen { z-index: 100 !important; }
 #screen-product-detail { z-index: 200 !important; }
+#supplier-contacts-modal { z-index: 9999 !important; }
