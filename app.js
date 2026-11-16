@@ -65,7 +65,6 @@ async function syncFavoritesFromDB() {
       favProducts = res.map(item => item.product_id);
       localStorage.setItem('fav_products', JSON.stringify(favProducts));
       updateFavBadges();
-      // Обновляем сердечки на экране, если они есть
       document.querySelectorAll(`[data-fav-pid]`).forEach(el => {
         const id = parseInt(el.dataset.favPid);
         const isFav = favProducts.includes(id);
@@ -95,7 +94,6 @@ async function uploadImage(file, bucket = 'product-images'){
   } catch(e){ return null; }
 }
 
-// ФИКС КЭША: Добавляем уникальный параметр _t
 async function fetchData(endpoint){
   try {
     const separator = endpoint.includes('?') ? '&' : '?';
@@ -201,9 +199,11 @@ function renderProductCard(p, imgs){
     : '';
   const badge = p.discount ? `<span class="tagbadge">${p.discount}</span>` : (p.is_hot ? '<span class="tagbadge">Hot</span>' : '');
   const fav = favProducts.includes(p.id);
+  
+  // ДОБАВЛЕН onscroll="updateDots(this)" ВНУТРЬ .ph-track
   return `<div class="prod" onclick="openProductDetail(${p.id})">
     <div class="ph">
-      <div class="ph-track">${slides}</div>
+      <div class="ph-track" onscroll="updateDots(this)">${slides}</div>
       ${badge}
       <button class="pcorner ${fav ? 'on' : ''}" data-fav-pid="${p.id}" onclick="event.stopPropagation();toggleFavProduct(${p.id});">${heartSVG(fav)}</button>
     </div>
@@ -216,21 +216,24 @@ function renderProductCard(p, imgs){
 }
 window.renderProductCard = renderProductCard;
 
-// ФИКС АНИМАЦИИ: Возвращаем слушатель скролла для карусели
-document.addEventListener('scroll', (e) => {
-  const t = e.target;
-  if (t && t.classList && t.classList.contains('ph-track')) {
-    const idx = Math.round(t.scrollLeft / t.clientWidth);
-    const row = t.closest('.prod')?.querySelector('.ph-dotsrow');
-    if (row) {
-      row.querySelectorAll('.pdot').forEach((d, i) => {
-        d.classList.toggle('active', i === idx);
-      });
-    }
+// ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ТОЧЕК
+window.updateDots = function(track) {
+  if (!track || !track.clientWidth) return;
+  const idx = Math.round(track.scrollLeft / track.clientWidth);
+  
+  // Обновление для карточки товара
+  const dotsRow = track.closest('.prod')?.querySelector('.ph-dotsrow');
+  if (dotsRow) {
+    dotsRow.querySelectorAll('.pdot').forEach((d, i) => d.classList.toggle('active', i === idx));
   }
-}, true);
+  
+  // Обновление для детальной страницы товара
+  const pdDots = document.getElementById('pd-dots');
+  if (pdDots && track.id === 'pd-track') {
+    pdDots.querySelectorAll('.pdot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  }
+};
 
-// Делегирование клика по точкам (карусель)
 document.addEventListener('click', function(e){
   const dot = e.target.closest && e.target.closest('.pdot');
   if (!dot) return;
@@ -399,7 +402,12 @@ async function openAllProductsInCategory(catId){
   const subs = await fetchData(`subcategories?category_id=eq.${catId}`);
   const subIds = subs.map(s => s.id);
   if (!subIds.length) { alert('Товаров нет'); return; }
-  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   document.getElementById('nested-title').textContent = 'Все товары';
@@ -411,7 +419,12 @@ async function openProductsInSub(subId){
   const nested = document.getElementById('nested-screen');
   nested.dataset.state = 'products';
   nested.dataset.subId = subId;
-  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?subcategory_id=eq.${subId}&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   document.getElementById('nested-title').textContent = 'Товары';
@@ -454,8 +467,10 @@ async function openProductDetail(productId){
   const heartBtn = document.getElementById('pd-heart');
   heartBtn.classList.toggle('on', isFav);
   heartBtn.innerHTML = heartSVG(isFav);
+  
+  // ДОБАВЛЕН onscroll="updateDots(this)"
   content.innerHTML = `
-    <div class="pd-photo"><div class="ph-track" id="pd-track">${slides}</div></div>
+    <div class="pd-photo"><div class="ph-track" id="pd-track" onscroll="updateDots(this)">${slides}</div></div>
     ${dots}
     <div class="pd-price-row">
       <span class="pd-price">${formatPrice(p.price)}</span>
@@ -469,13 +484,6 @@ async function openProductDetail(productId){
     </div>
     <div class="notice" style="margin-top:14px;">🛡️ Заказ, оплата и доставка — напрямую у поставщика.</div>
   `;
-  const track = document.getElementById('pd-track');
-  track.style.scrollBehavior = 'smooth';
-  track.addEventListener('scroll', () => {
-    const slideWidth = track.scrollWidth / track.children.length;
-    const idx = Math.round(track.scrollLeft / slideWidth);
-    document.querySelectorAll('#pd-dots .pdot').forEach((d, i) => d.classList.toggle('active', i === idx));
-  });
 }
 window.openProductDetail = openProductDetail;
 
@@ -514,7 +522,11 @@ async function runSearch(){
   home.style.display = 'none';
   
   const searchQuery = encodeURIComponent(q);
-  const res = await fetchData(`products?or=(title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*)&limit=50`);
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const res = await fetchData(`products?or=(title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*)&limit=50&order=${orderParam}`);
   
   const empty = document.getElementById('search-empty');
   if (!res.length) {
@@ -529,14 +541,26 @@ async function runSearch(){
 }
 
 // ============ SORT (РЕАЛЬНАЯ) ============
-let currentSort = 'new'; 
+// Читаем сохраненный выбор из памяти телефона
+let currentSort = localStorage.getItem('currentSort') || 'new'; 
 
-function openSortSheet(){ document.getElementById('sort-modal').classList.remove('hidden'); }
+function openSortSheet(){ 
+  // Обновляем галочки перед открытием, чтобы показать текущий выбор
+  document.querySelectorAll('.sort-option').forEach(o => {
+    const on = o.dataset.value === currentSort;
+    o.classList.toggle('active', on);
+    const rb = o.querySelector('.radio-btn');
+    if (rb) rb.classList.toggle('selected', on);
+  });
+  document.getElementById('sort-modal').classList.remove('hidden'); 
+}
 window.openSortSheet = openSortSheet;
 document.getElementById('sort-modal-backdrop').onclick = () => document.getElementById('sort-modal').classList.add('hidden');
 
 function pickSortOption(val){
   currentSort = val;
+  localStorage.setItem('currentSort', val); // ЗАПОМИНАЕМ ВЫБОР
+  
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === val;
     o.classList.toggle('active', on);
