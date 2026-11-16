@@ -218,9 +218,13 @@ document.addEventListener('click', function(e){
 
 // ============ LOAD HOME ============
 async function loadHome(){
+  let orderParam = 'id.desc'; // Новинки
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
   const [cats, products] = await Promise.all([
     fetchData('categories'),
-    fetchData('products?limit=200')
+    fetchData(`products?limit=200&order=${orderParam}`)
   ]);
   const chiprow = document.getElementById('chiprow');
   if (!chiprow) return;
@@ -286,7 +290,12 @@ async function filterHomeByCategory(catId){
     if (topGrid) topGrid.innerHTML = '';
     return;
   }
-  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})&limit=50`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})&limit=50&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   hotGrid.innerHTML = products.length
@@ -297,7 +306,6 @@ async function filterHomeByCategory(catId){
 
 // ============ CATALOG SCREEN ============
 async function loadCatalogScreen(){
-  // ОГРАНИЧИВАЕМ ВЫБОРКУ БЕЗОПАСНЫМИ КОЛОНКАМИ ИЗ-ЗА RLS
   const [cats, sups] = await Promise.all([
     fetchData('categories'), 
     fetchData('suppliers?select=id,name,description,logo_url')
@@ -352,7 +360,12 @@ async function openAllProductsInCategory(catId){
   const subs = await fetchData(`subcategories?category_id=eq.${catId}`);
   const subIds = subs.map(s => s.id);
   if (!subIds.length) { alert('Товаров нет'); return; }
-  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   document.getElementById('nested-title').textContent = 'Все товары';
@@ -364,7 +377,12 @@ async function openProductsInSub(subId){
   const nested = document.getElementById('nested-screen');
   nested.dataset.state = 'products';
   nested.dataset.subId = subId;
-  const products = await fetchData(`products?subcategory_id=eq.${subId}`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?subcategory_id=eq.${subId}&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   document.getElementById('nested-title').textContent = 'Товары';
@@ -388,7 +406,6 @@ async function openProductDetail(productId){
   const dots = imgs.length > 1 ? `<div class="pd-dots" id="pd-dots">${imgs.map((_, i) => `<span class="pdot${i === 0 ? ' active' : ''}" data-idx="${i}"></span>`).join('')}</div>` : '';
   let supplierBlock = '';
   if (p.supplier_id) {
-    // ОГРАНИЧИВАЕМ ВЫБОРКУ БЕЗОПАСНЫМИ КОЛОНКАМИ ИЗ-ЗА RLS
     const supArr = await fetchData(`suppliers?id=eq.${p.supplier_id}&select=id,name,description,logo_url`);
     if (supArr.length) {
       const s = supArr[0];
@@ -452,7 +469,12 @@ async function runSearch(){
   if (!q) { block.style.display = 'none'; home.style.display = 'block'; return; }
   block.style.display = 'block';
   home.style.display = 'none';
-  const res = await fetchData(`products?title=ilike.*${encodeURIComponent(q)}*&limit=30`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const res = await fetchData(`products?title=ilike.*${encodeURIComponent(q)}*&limit=30&order=${orderParam}`);
   const empty = document.getElementById('search-empty');
   if (!res.length) {
     document.getElementById('search-results').innerHTML = '';
@@ -464,18 +486,39 @@ async function runSearch(){
   document.getElementById('search-results').innerHTML = res.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('');
 }
 
-// ============ SORT ============
-function openSortSheet(){ document.getElementById('sort-modal').classList.remove('hidden'); }
+// ============ SORT (РЕАЛЬНАЯ) ============
+let currentSort = localStorage.getItem('currentSort') || 'new'; 
+
+function openSortSheet(){ 
+  document.querySelectorAll('.sort-option').forEach(o => {
+    const on = o.dataset.value === currentSort;
+    o.classList.toggle('active', on);
+    const rb = o.querySelector('.radio-btn');
+    if (rb) rb.classList.toggle('selected', on);
+  });
+  document.getElementById('sort-modal').classList.remove('hidden'); 
+}
 window.openSortSheet = openSortSheet;
 document.getElementById('sort-modal-backdrop').onclick = () => document.getElementById('sort-modal').classList.add('hidden');
+
 function pickSortOption(val){
+  currentSort = val;
+  localStorage.setItem('currentSort', val);
+  
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === val;
     o.classList.toggle('active', on);
     const rb = o.querySelector('.radio-btn');
     if (rb) rb.classList.toggle('selected', on);
   });
-  setTimeout(() => document.getElementById('sort-modal').classList.add('hidden'), 200);
+  setTimeout(() => {
+    document.getElementById('sort-modal').classList.add('hidden');
+    if (document.getElementById('screen-home').classList.contains('active')) {
+        loadHome();
+    } else if (document.getElementById('screen-catalog').classList.contains('active')) {
+        loadCatalogScreen();
+    }
+  }, 200);
 }
 window.pickSortOption = pickSortOption;
 
@@ -508,7 +551,6 @@ async function renderFavorites(){
     emptySup.style.display = 'flex';
   } else {
     emptySup.style.display = 'none';
-    // ОГРАНИЧИВАЕМ ВЫБОРКУ БЕЗОПАСНЫМИ КОЛОНКАМИ
     const sups = await fetchData(`suppliers?id=in.(${favSuppliers.join(',')})&select=id,name,description,logo_url`);
     supWrap.innerHTML = sups.map(s => `
       <div class="list-row" onclick="openSupplierDetail(${s.id})">
@@ -587,7 +629,6 @@ document.getElementById('faq-list').innerHTML = faqData.map(f => `
 async function openSuppliersScreen(){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-suppliers').classList.add('active');
-  // ОГРАНИЧИВАЕМ ВЫБОРКУ
   const sups = await fetchData('suppliers?select=id,name,description,logo_url');
   renderSuppliersList(sups);
 }
@@ -616,7 +657,6 @@ async function openSupplierDetail(supplierId){
   document.getElementById('screen-supplier-detail').classList.add('active');
   const wrap = document.getElementById('supplier-detail-content');
   wrap.innerHTML = '<p style="text-align:center;margin-top:50px;color:var(--hint);">Загрузка...</p>';
-  // ОГРАНИЧИВАЕМ ВЫБОРКУ
   const arr = await fetchData(`suppliers?id=eq.${supplierId}&select=id,name,description,logo_url`);
   if (!arr.length) return;
   const s = arr[0];
@@ -646,7 +686,7 @@ document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-suppliers').classList.add('active');
 };
 
-// ============ CONTACTS MODAL (БЕЗОПАСНАЯ ЧЕРЕЗ RPC) ============
+// ============ CONTACTS MODAL ============
 async function showSupplierContacts(){
   const s = currentSupplierData;
   if (!s) return;
@@ -661,7 +701,6 @@ async function showSupplierContacts(){
   document.getElementById('supplier-contacts-modal').classList.remove('hidden');
 
   try {
-    // ОБРАЩАЕМСЯ К ЗАЩИЩЕННОЙ ФУНКЦИИ, КОТОРАЯ САМА ПРОВЕРИТ ОПЛАТУ
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_supplier_contacts`, {
       method: 'POST',
       headers: {
