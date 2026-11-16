@@ -14,6 +14,10 @@ let currentDetailProductId = null;
 let selectedFiles = [];
 let currentSupplierDetailId = null; 
 
+// Храним историю для кнопки "Назад"
+let prevScreenId = null;
+let prevOverlays = [];
+
 let currentSort = localStorage.getItem('currentSort') || 'new'; 
 
 // ============ CURRENCY ============
@@ -141,6 +145,7 @@ function heartSVG(active){
 function goTab(name){
   if (name === 'home') loadHome();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show')); // сбрасываем оверлеи при переходе по табам
   const el = document.getElementById('screen-' + name);
   if (el) el.classList.add('active');
   document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -700,10 +705,8 @@ document.getElementById('faq-list').innerHTML = faqData.map(f => `
 
 // ============ SUPPLIERS ============
 async function openSuppliersScreen(){
-  document.getElementById('screen-product-detail').classList.remove('show');
-  document.getElementById('nested-screen').classList.remove('show');
-  
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
   document.getElementById('screen-suppliers').classList.add('active');
   const sups = await fetchData('suppliers?select=id,name,description,logo_url');
   renderSuppliersList(sups);
@@ -729,13 +732,18 @@ document.getElementById('suppliers-back-btn').onclick = () => {
 };
 
 async function openSupplierDetail(supplierId){
-  document.getElementById('screen-product-detail').classList.remove('show');
-  document.getElementById('nested-screen').classList.remove('show');
+  // ЗАПОМИНАЕМ, ОТКУДА ПРИШЛИ
+  prevScreenId = document.querySelector('.screen.active')?.id || 'screen-catalog';
+  prevOverlays = Array.from(document.querySelectorAll('.overlay.show')).map(el => el.id);
 
+  // СКРЫВАЕМ ВСЁ
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
+
+  // ОТКРЫВАЕМ ПОСТАВЩИКА
   document.getElementById('screen-supplier-detail').classList.add('active');
-  
   currentSupplierDetailId = supplierId;
+  
   const wrap = document.getElementById('supplier-detail-content');
   wrap.innerHTML = '<p style="text-align:center;margin-top:50px;color:var(--hint);">Загрузка...</p>';
   
@@ -745,7 +753,6 @@ async function openSupplierDetail(supplierId){
   currentSupplierData = s;
   const isFav = favSuppliers.includes(s.id);
   
-  // ПОИСК И СОРТИРОВКА НАД КОНТАКТАМИ
   wrap.innerHTML = `
     <div class="pd-supplier">
       <div class="avatar" style="width:56px;height:56px;">${s.logo_url ? `<img src="${s.logo_url}">` : s.name.slice(0, 2)}</div>
@@ -753,7 +760,6 @@ async function openSupplierDetail(supplierId){
       <button class="heart-ic ${isFav ? 'on' : ''}" data-fav-sid="${s.id}" style="color:${isFav ? '#ff4d67' : 'var(--hint)'};" onclick="event.stopPropagation();toggleFavSupplier(${s.id});">${heartSVG(isFav)}</button>
     </div>
 
-    <!-- Поиск над контактами -->
     <div style="display:flex; gap:8px; margin-bottom:14px;">
       <div class="search" style="flex:1;">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -764,7 +770,6 @@ async function openSupplierDetail(supplierId){
       </button>
     </div>
 
-    <!-- ТОЛЬКО КНОПКА КОНТАКТОВ, РАСТЯНУТАЯ НА ВСЮ ШИРИНУ -->
     <div class="pd-actions" style="margin-bottom:20px; grid-template-columns: 1fr;">
       <button onclick="showSupplierContacts()">💬 Контакты</button>
     </div>
@@ -777,7 +782,6 @@ async function openSupplierDetail(supplierId){
 }
 window.openSupplierDetail = openSupplierDetail;
 
-// ФУНКЦИЯ ДЛЯ ОТРИСОВКИ ТОВАРОВ ПОСТАВЩИКА С ПОИСКОМ
 async function renderSupplierProducts(supplierId) {
     const grid = document.getElementById('supplier-products-grid');
     if (!grid) return;
@@ -808,8 +812,20 @@ window.renderSupplierProducts = renderSupplierProducts;
 
 document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-supplier-detail').classList.remove('active');
-  document.getElementById('screen-suppliers').classList.add('active');
+  
+  // ВОЗВРАЩАЕМ ТУДА, ОТКУДА ПРИШЛИ
+  if (prevScreenId) {
+    document.getElementById(prevScreenId).classList.add('active');
+  } else {
+    document.getElementById('screen-catalog').classList.add('active');
+  }
+  prevOverlays.forEach(id => {
+    document.getElementById(id).classList.add('show');
+  });
+  
   currentSupplierDetailId = null;
+  prevScreenId = null;
+  prevOverlays = [];
 };
 
 // ============ CONTACTS MODAL (PAYWALL) ============
