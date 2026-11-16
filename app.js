@@ -3,7 +3,7 @@ const TG = window.Telegram?.WebApp;
 TG?.ready(); TG?.expand();
 
 const SUPABASE_URL = "https://chvwhwxqpeacuiyccexw.supabase.co";
-const SUPABASE_KEY = "sb_publishable_uMKtRMhQPVglw2Hhg0RImQ_FRFByVIr";
+const SUPABASE_KEY = "sb_publishable_uMKtRMhQPVglw2Hhg0RImQ_FRFByVIr"; // Публичный ключ
 const ADMIN_ID = 6157818783;
 
 const tgUser = TG?.initDataUnsafe?.user;
@@ -53,8 +53,29 @@ function setCurrency(cur){
 }
 window.setCurrency = setCurrency;
 
+// ============ FAVORITES SYNC ============
 let favProducts = JSON.parse(localStorage.getItem('fav_products') || '[]');
 let favSuppliers = JSON.parse(localStorage.getItem('fav_suppliers') || '[]');
+
+async function syncFavoritesFromDB() {
+  if (!currentUserId) return;
+  try {
+    const res = await fetchData(`user_favorites?tg_id=eq.${currentUserId}`);
+    if (res && res.length > 0) {
+      favProducts = res.map(item => item.product_id);
+      localStorage.setItem('fav_products', JSON.stringify(favProducts));
+      updateFavBadges();
+      // Обновляем сердечки на экране, если они есть
+      document.querySelectorAll(`[data-fav-pid]`).forEach(el => {
+        const id = parseInt(el.dataset.favPid);
+        const isFav = favProducts.includes(id);
+        el.classList.toggle('on', isFav);
+        el.innerHTML = heartSVG(isFav);
+      });
+    }
+  } catch (e) { console.error("Ошибка синхронизации избранного", e); }
+}
+
 function saveFavs(){
   localStorage.setItem('fav_products', JSON.stringify(favProducts));
   localStorage.setItem('fav_suppliers', JSON.stringify(favSuppliers));
@@ -98,6 +119,15 @@ async function sbInsert(table, body){
   } catch(e){ return null; }
 }
 
+async function sbDelete(table, query) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY }
+    });
+  } catch(e){ console.error(e); }
+}
+
 // ============ HEART SVG ============
 function heartSVG(active){
   return `<svg viewBox="0 0 24 24" width="20" height="20" fill="${active?'#ff4d67':'none'}" stroke="${active?'#ff4d67':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-.3 0-.6-.1-.8-.3C7.4 17.4 3 13.3 3 9.5 3 6.5 5.4 4 8.4 4c1.6 0 3.1.8 4 2.1.9-1.3 2.4-2.1 4-2.1 3 0 5.4 2.5 5.4 5.5 0 3.8-4.4 7.9-8.2 11.2-.2.2-.5.3-.8.3z"/></svg>`;
@@ -116,7 +146,7 @@ function goTab(name){
 }
 window.goTab = goTab;
 
-// ============ FAVORITES ============
+// ============ FAVORITES UI ============
 function updateFavBadges(){
   const n = favProducts.length;
   document.querySelectorAll('.navdot').forEach(el => el.textContent = n);
@@ -125,9 +155,16 @@ function updateFavBadges(){
   if (gc) gc.textContent = n;
   if (sc) sc.textContent = favSuppliers.length;
 }
+
 function toggleFavProduct(id){
   const i = favProducts.indexOf(id);
-  if (i > -1) favProducts.splice(i, 1); else favProducts.push(id);
+  if (i > -1) {
+    favProducts.splice(i, 1);
+    if (currentUserId) sbDelete('user_favorites', `tg_id=eq.${currentUserId}&product_id=eq.${id}`);
+  } else {
+    favProducts.push(id);
+    if (currentUserId) sbInsert('user_favorites', { tg_id: currentUserId, product_id: id });
+  }
   saveFavs();
   updateFavBadges();
   document.querySelectorAll(`[data-fav-pid="${id}"]`).forEach(el => {
@@ -175,15 +212,7 @@ function renderProductCard(p, imgs){
 }
 window.renderProductCard = renderProductCard;
 
-document.addEventListener('scroll', (e) => {
-  const t = e.target;
-  if (t && t.classList && t.classList.contains('ph-track')) {
-    const idx = Math.round(t.scrollLeft / t.clientWidth);
-    const row = t.closest('.prod')?.querySelector('.ph-dotsrow');
-    if (row) row.querySelectorAll('.pdot').forEach((d, i) => d.classList.toggle('active', i === idx));
-  }
-}, true);
-
+// Делегирование клика по точкам (карусель)
 document.addEventListener('click', function(e){
   const dot = e.target.closest && e.target.closest('.pdot');
   if (!dot) return;
@@ -212,10 +241,16 @@ document.addEventListener('click', function(e){
 
 // ============ LOAD HOME ============
 async function loadHome(){
+  // Определяем параметр сортировки для Supabase
+  let orderParam = 'id.desc'; // Новинки
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
   const [cats, products] = await Promise.all([
     fetchData('categories'),
-    fetchData('products?limit=200')
+    fetchData(`products?limit=200&order=${orderParam}`)
   ]);
+  
   const chiprow = document.getElementById('chiprow');
   if (!chiprow) return;
   chiprow.innerHTML = '<button class="chip active" data-cat="">Все</button>' +
@@ -280,7 +315,12 @@ async function filterHomeByCategory(catId){
     if (topGrid) topGrid.innerHTML = '';
     return;
   }
-  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})&limit=50`);
+  
+  let orderParam = 'id.desc';
+  if (currentSort === 'cheap') orderParam = 'price.asc';
+  if (currentSort === 'expensive') orderParam = 'price.desc';
+
+  const products = await fetchData(`products?subcategory_id=in.(${subIds.join(',')})&limit=50&order=${orderParam}`);
   let imgs = [];
   if (products.length) imgs = await fetchData(`product_images?product_id=in.(${products.map(p => p.id).join(',')})`);
   hotGrid.innerHTML = products.length
@@ -434,44 +474,67 @@ document.getElementById('pd-heart').addEventListener('click', () => {
 document.getElementById('detail-back-btn').onclick = () => document.getElementById('screen-product-detail').classList.remove('show');
 document.getElementById('back-btn').onclick = () => document.getElementById('nested-screen').classList.remove('show');
 
-// ============ SEARCH ============
+// ============ SEARCH (УМНЫЙ) ============
 const searchInput = document.getElementById('search-input');
 let searchTimer;
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(runSearch, 350);
 });
+
 async function runSearch(){
   const q = searchInput.value.trim();
   const block = document.getElementById('search-block');
   const home = document.getElementById('home-block');
-  if (!q) { block.style.display = 'none'; home.style.display = 'block'; return; }
+  
+  if (!q) { 
+    block.style.display = 'none'; 
+    home.style.display = 'block'; 
+    return; 
+  }
+  
   block.style.display = 'block';
   home.style.display = 'none';
-  const res = await fetchData(`products?title=ilike.*${encodeURIComponent(q)}*&limit=30`);
+  
+  // Оператор or: ищет И в title, И в description
+  const searchQuery = encodeURIComponent(q);
+  const res = await fetchData(`products?or=(title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*)&limit=50`);
+  
   const empty = document.getElementById('search-empty');
   if (!res.length) {
     document.getElementById('search-results').innerHTML = '';
     empty.style.display = 'flex';
     return;
   }
+  
   empty.style.display = 'none';
   const imgs = await fetchData(`product_images?product_id=in.(${res.map(p => p.id).join(',')})`);
   document.getElementById('search-results').innerHTML = res.map(p => renderProductCard(p, imgs.filter(i => i.product_id === p.id))).join('');
 }
 
-// ============ SORT ============
+// ============ SORT (РЕАЛЬНАЯ) ============
+let currentSort = 'new'; // Глобальная переменная сортировки
+
 function openSortSheet(){ document.getElementById('sort-modal').classList.remove('hidden'); }
 window.openSortSheet = openSortSheet;
 document.getElementById('sort-modal-backdrop').onclick = () => document.getElementById('sort-modal').classList.add('hidden');
+
 function pickSortOption(val){
+  currentSort = val;
   document.querySelectorAll('.sort-option').forEach(o => {
     const on = o.dataset.value === val;
     o.classList.toggle('active', on);
     const rb = o.querySelector('.radio-btn');
     if (rb) rb.classList.toggle('selected', on);
   });
-  setTimeout(() => document.getElementById('sort-modal').classList.add('hidden'), 200);
+  setTimeout(() => {
+    document.getElementById('sort-modal').classList.add('hidden');
+    if (document.getElementById('screen-home').classList.contains('active')) {
+        loadHome();
+    } else if (document.getElementById('screen-catalog').classList.contains('active')) {
+        loadCatalogScreen();
+    }
+  }, 200);
 }
 window.pickSortOption = pickSortOption;
 
@@ -515,9 +578,8 @@ async function renderFavorites(){
 }
 window.renderFavorites = renderFavorites;
 
-// ============ PROFILE (ИСПРАВЛЕНО ДЛЯ ПК) ============
+// ============ PROFILE ============
 async function loadProfile(){
-  // Ждем, пока Telegram на ПК передаст данные (максимум 1.5 сек)
   let retries = 0;
   while (!window.Telegram?.WebApp?.initDataUnsafe?.user && retries < 15) {
     await new Promise(r => setTimeout(r, 100));
@@ -527,8 +589,6 @@ async function loadProfile(){
   const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
   const isAdmin = (user?.id === ADMIN_ID) || (currentUserId === ADMIN_ID);
   
-  console.log('[PROFILE] Данные из TG:', user);
-
   document.getElementById('user-name').textContent = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : 'Пользователь';
   document.getElementById('user-username').textContent = user?.username ? '@' + user.username : 'Нет username';
 
@@ -550,6 +610,9 @@ async function loadProfile(){
 
   document.getElementById('admin-panel-btn').style.display = isAdmin ? 'block' : 'none';
   updateCurrToggleUI();
+  
+  // Синхронизируем избранное при загрузке профиля
+  syncFavoritesFromDB();
 }
 window.loadProfile = loadProfile;
 
@@ -642,72 +705,89 @@ document.getElementById('supplier-detail-back-btn').onclick = () => {
   document.getElementById('screen-suppliers').classList.add('active');
 };
 
-// ============ CONTACTS MODAL ============
+// ============ CONTACTS MODAL (С PAYWALL) ============
 async function showSupplierContacts(){
   const s = currentSupplierData;
   if (!s) return;
-
-  const tgId = currentUserId;
-  let isPaid = false;
   
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/ref_payments?tg_id=eq.${tgId}&status=eq.success`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const payments = await res.json();
-    if (payments && payments.length > 0) isPaid = true;
-  } catch (e) {
-    console.error("Ошибка проверки оплаты", e);
-  }
-
-  if (!isPaid) {
-    const html = `
-      <p style="text-align:center; color:var(--hint); margin: 20px 0; font-size: 14px;">
-        Контакты поставщиков доступны только по подписке.
-      </p>
-      <button class="admin-big-btn" style="background:var(--btn); color:white; margin-top:10px;" onclick="TG.close();">
-        Оформить доступ в боте
-      </button>
-    `;
-    document.getElementById('supplier-contacts-list').innerHTML = html;
-    document.getElementById('supplier-contacts-modal').classList.remove('hidden');
+  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (!tgId) {
+    alert('Не удалось определить ваш Telegram ID. Перезапустите приложение.');
     return;
   }
 
-  const contacts = Array.isArray(s.contacts) ? s.contacts : [];
-  let html = `<p style="color:var(--hint);font-size:13px;margin:0 0 14px 0;">${s.name}</p>`;
-  
-  if (!contacts.length) {
-    html += '<p style="text-align:center;color:var(--hint);margin:20px 0;">У поставщика пока нет контактов.</p>';
-  } else {
-    contacts.forEach(c => {
-      let icon = '🔗', label = c.type;
-      if (c.type === 'telegram') { icon = '✈️'; label = 'Telegram'; }
-      else if (c.type === 'whatsapp') { icon = '💬'; label = 'WhatsApp'; }
-      else if (c.type === 'phone') { icon = '📞'; label = 'Телефон'; }
-      else if (c.type === 'vk') { icon = '📘'; label = 'VK'; }
-      else if (c.type === 'website') { icon = '🌐'; label = 'Сайт'; }
-      let link = c.value.startsWith('http') ? c.value : 'https://' + c.value;
-      html += `<div style="background:var(--secbg);padding:14px;border-radius:12px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
-        <div style="font-size:22px;">${icon}</div>
-        <div style="flex:1;min-width:0;"><b style="font-size:14px;">${label}</b><div><a href="${link}" target="_blank" style="color:var(--btn);text-decoration:underline;font-size:13px;word-break:break-all;">${c.value}</a></div></div>
-      </div>`;
-    });
-  }
-  document.getElementById('supplier-contacts-list').innerHTML = html;
+  document.getElementById('supplier-contacts-list').innerHTML = '<p style="text-align:center;margin:20px;">Загрузка контактов...</p>';
   document.getElementById('supplier-contacts-modal').classList.remove('hidden');
+
+  try {
+    // ВЫЗОВ ЗАЩИЩЕННОЙ RPC-ФУНКЦИИ (Paywall)
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_supplier_contacts`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        p_supplier_id: s.id,
+        p_tg_id: tgId
+      })
+    });
+
+    // Если 403 - значит оплаты нет (Supabase вернул ошибку 42501)
+    if (res.status === 403) {
+      const paywallHtml = `
+        <p style="text-align:center; color:var(--hint); margin: 20px 0; font-size: 14px;">
+          Контакты поставщиков доступны только по подписке.
+        </p>
+        <button class="admin-big-btn" style="background:var(--btn); color:white; margin-top:10px;" onclick="Telegram.WebApp.close();">
+          Оформить доступ в боте
+        </button>
+      `;
+      document.getElementById('supplier-contacts-list').innerHTML = paywallHtml;
+      return;
+    }
+
+    if (!res.ok) throw new Error('Ошибка сервера');
+    
+    const contacts = await res.json(); // Массив контактов
+    
+    let html = `<p style="color:var(--hint);font-size:13px;margin:0 0 14px 0;">${s.name}</p>`;
+    
+    if (!contacts || !contacts.length) {
+      html += '<p style="text-align:center;color:var(--hint);margin:20px 0;">У поставщика пока нет контактов.</p>';
+    } else {
+      contacts.forEach(c => {
+        let icon = '🔗', label = c.type;
+        if (c.type === 'telegram') { icon = '✈️'; label = 'Telegram'; }
+        else if (c.type === 'whatsapp') { icon = '💬'; label = 'WhatsApp'; }
+        else if (c.type === 'phone') { icon = '📞'; label = 'Телефон'; }
+        else if (c.type === 'vk') { icon = '📘'; label = 'VK'; }
+        else if (c.type === 'website') { icon = '🌐'; label = 'Сайт'; }
+        let link = c.value.startsWith('http') ? c.value : 'https://' + c.value;
+        html += `<div style="background:var(--secbg);padding:14px;border-radius:12px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:22px;">${icon}</div>
+          <div style="flex:1;min-width:0;"><b style="font-size:14px;">${label}</b><div><a href="${link}" target="_blank" style="color:var(--btn);text-decoration:underline;font-size:13px;word-break:break-all;">${c.value}</a></div></div>
+        </div>`;
+      });
+    }
+    document.getElementById('supplier-contacts-list').innerHTML = html;
+
+  } catch (error) {
+    console.error(error);
+    document.getElementById('supplier-contacts-list').innerHTML = '<p style="text-align:center;color:red;margin:20px;">Ошибка загрузки контактов.</p>';
+  }
 }
 window.showSupplierContacts = showSupplierContacts;
 document.getElementById('close-contacts-btn').onclick = () => document.getElementById('supplier-contacts-modal').classList.add('hidden');
 
-// ============ ADMIN PANEL ============
+// ============ ADMIN PANEL (Оставили как есть) ============
 document.getElementById('admin-panel-btn').onclick = () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin').classList.add('active');
 };
 document.getElementById('admin-back-btn').onclick = () => goTab('profile');
 
-// ---------- ADD PRODUCT (СВЯЗЬ КАТЕГОРИЙ) ----------
 document.getElementById('btn-add-product').onclick = async () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin-product').classList.add('active');
@@ -722,7 +802,6 @@ document.getElementById('btn-add-product').onclick = async () => {
   subSelect.innerHTML = '<option value="">Сначала выберите раздел...</option>';
   subSelect.disabled = true;
   
-  // Обработчик для фильтрации подкатегорий
   catSelect.onchange = (e) => {
     const catId = e.target.value;
     if (!catId) {
@@ -802,7 +881,6 @@ document.getElementById('save-product-btn').onclick = async () => {
   alert('✅ Товар добавлен!');
 };
 
-// ---------- ADD SUPPLIER ----------
 const contactsContainer = document.getElementById('supplier-contacts-container');
 function addContactField(type = 'telegram', value = ''){
   if (!contactsContainer) return;
@@ -866,7 +944,6 @@ document.getElementById('save-supplier-btn').onclick = async () => {
   }
 };
 
-// ---------- CREATE MODAL (ПРИВЯЗКА КАТЕГОРИИ) ----------
 const modal = document.getElementById('create-modal');
 let modalType = 'category';
 document.getElementById('modal-image').addEventListener('change', (e) => {
@@ -939,7 +1016,6 @@ document.getElementById('modal-save-btn').onclick = async () => {
   }
 };
 
-// ---------- FILTER MODAL ----------
 let selectedSupplierCategories = [];
 document.getElementById('open-filter-modal-btn').onclick = async () => {
   const cats = await fetchData('categories');
@@ -986,4 +1062,4 @@ document.getElementById('close-filter-modal-btn').onclick = async () => {
 updateCurrToggleUI();
 loadHome();
 updateFavBadges();
-loadProfile(); // Запускаем профиль при старте
+loadProfile(); // Запускаем профиль и синхронизацию избранного при старте
