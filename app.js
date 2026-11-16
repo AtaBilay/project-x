@@ -95,9 +95,13 @@ async function uploadImage(file, bucket = 'product-images'){
   } catch(e){ return null; }
 }
 
+// ФИКС КЭША: Добавляем уникальный параметр _t
 async function fetchData(endpoint){
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const url = `${SUPABASE_URL}/rest/v1/${endpoint}${separator}_t=${Date.now()}`;
+    
+    const r = await fetch(url, {
       headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' }
     });
     if (!r.ok) return [];
@@ -212,6 +216,20 @@ function renderProductCard(p, imgs){
 }
 window.renderProductCard = renderProductCard;
 
+// ФИКС АНИМАЦИИ: Возвращаем слушатель скролла для карусели
+document.addEventListener('scroll', (e) => {
+  const t = e.target;
+  if (t && t.classList && t.classList.contains('ph-track')) {
+    const idx = Math.round(t.scrollLeft / t.clientWidth);
+    const row = t.closest('.prod')?.querySelector('.ph-dotsrow');
+    if (row) {
+      row.querySelectorAll('.pdot').forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+      });
+    }
+  }
+}, true);
+
 // Делегирование клика по точкам (карусель)
 document.addEventListener('click', function(e){
   const dot = e.target.closest && e.target.closest('.pdot');
@@ -241,7 +259,6 @@ document.addEventListener('click', function(e){
 
 // ============ LOAD HOME ============
 async function loadHome(){
-  // Определяем параметр сортировки для Supabase
   let orderParam = 'id.desc'; // Новинки
   if (currentSort === 'cheap') orderParam = 'price.asc';
   if (currentSort === 'expensive') orderParam = 'price.desc';
@@ -496,7 +513,6 @@ async function runSearch(){
   block.style.display = 'block';
   home.style.display = 'none';
   
-  // Оператор or: ищет И в title, И в description
   const searchQuery = encodeURIComponent(q);
   const res = await fetchData(`products?or=(title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*)&limit=50`);
   
@@ -513,7 +529,7 @@ async function runSearch(){
 }
 
 // ============ SORT (РЕАЛЬНАЯ) ============
-let currentSort = 'new'; // Глобальная переменная сортировки
+let currentSort = 'new'; 
 
 function openSortSheet(){ document.getElementById('sort-modal').classList.remove('hidden'); }
 window.openSortSheet = openSortSheet;
@@ -611,7 +627,6 @@ async function loadProfile(){
   document.getElementById('admin-panel-btn').style.display = isAdmin ? 'block' : 'none';
   updateCurrToggleUI();
   
-  // Синхронизируем избранное при загрузке профиля
   syncFavoritesFromDB();
 }
 window.loadProfile = loadProfile;
@@ -720,7 +735,6 @@ async function showSupplierContacts(){
   document.getElementById('supplier-contacts-modal').classList.remove('hidden');
 
   try {
-    // ВЫЗОВ ЗАЩИЩЕННОЙ RPC-ФУНКЦИИ (Paywall)
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_supplier_contacts`, {
       method: 'POST',
       headers: {
@@ -734,7 +748,6 @@ async function showSupplierContacts(){
       })
     });
 
-    // Если 403 - значит оплаты нет (Supabase вернул ошибку 42501)
     if (res.status === 403) {
       const paywallHtml = `
         <p style="text-align:center; color:var(--hint); margin: 20px 0; font-size: 14px;">
@@ -750,7 +763,7 @@ async function showSupplierContacts(){
 
     if (!res.ok) throw new Error('Ошибка сервера');
     
-    const contacts = await res.json(); // Массив контактов
+    const contacts = await res.json();
     
     let html = `<p style="color:var(--hint);font-size:13px;margin:0 0 14px 0;">${s.name}</p>`;
     
@@ -781,7 +794,7 @@ async function showSupplierContacts(){
 window.showSupplierContacts = showSupplierContacts;
 document.getElementById('close-contacts-btn').onclick = () => document.getElementById('supplier-contacts-modal').classList.add('hidden');
 
-// ============ ADMIN PANEL (Оставили как есть) ============
+// ============ ADMIN PANEL ============
 document.getElementById('admin-panel-btn').onclick = () => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-admin').classList.add('active');
@@ -1062,4 +1075,4 @@ document.getElementById('close-filter-modal-btn').onclick = async () => {
 updateCurrToggleUI();
 loadHome();
 updateFavBadges();
-loadProfile(); // Запускаем профиль и синхронизацию избранного при старте
+loadProfile(); 
